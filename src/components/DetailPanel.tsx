@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { X, Clock, UploadCloud } from 'lucide-react'
+import { X, Clock, UploadCloud, Calendar } from 'lucide-react'
 import { Item, User } from '@/lib/types'
 import { createClient } from '@/utils/supabase/client'
 import { trackEvent } from '@/utils/amplitude'
@@ -9,10 +9,11 @@ interface Props {
   items: Item[]
   onClose: () => void
   onToggleStatus: (item: Item) => void
+  onUpdateItem?: (id: string, updates: Partial<Item>) => void
   currentUser: User
 }
 
-export default function DetailPanel({ itemId, items, onClose, onToggleStatus, currentUser }: Props) {
+export default function DetailPanel({ itemId, items, onClose, onToggleStatus, onUpdateItem, currentUser }: Props) {
   const supabase = createClient()
   const detail = items.find(i => i.id === itemId)
   const isManager = currentUser.role === 'manager' || currentUser.role === 'admin'
@@ -82,7 +83,24 @@ export default function DetailPanel({ itemId, items, onClose, onToggleStatus, cu
         </div>
       )}
 
-      <div className="mt-3">
+      <div className="mt-4">
+        <div className="font-semibold text-[11px] tracking-[0.06em]" style={{ color: '#9AAA9A' }}>DUE DATE</div>
+        <div className="mt-1.5 flex items-center relative">
+          <Calendar size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: detail.due_date ? 'var(--color-forest)' : '#9AAA9A' }} />
+          <input 
+            type="date"
+            className="text-[12.5px] py-1.5 pr-2 pl-8 rounded-md border border-sage-light focus:outline-none focus:border-brand w-full bg-cream text-forest cursor-pointer transition-colors"
+            style={{ color: detail.due_date ? 'var(--color-forest)' : '#9AAA9A', background: 'var(--color-cream)', borderColor: 'var(--color-sage-pale)' }}
+            value={detail.due_date ? detail.due_date.split('T')[0] : ''}
+            onChange={(e) => {
+              const val = e.target.value
+              if (onUpdateItem) onUpdateItem(detail.id, { due_date: val ? new Date(val).toISOString() : null })
+            }}
+          />
+        </div>
+      </div>
+
+      <div className="mt-4">
         <div className="font-semibold text-[11px] tracking-[0.06em]" style={{ color: '#9AAA9A' }}>IMAGES</div>
         <div className="flex gap-1.5 mt-1.5 flex-wrap">
           {detail.images?.map(img => (

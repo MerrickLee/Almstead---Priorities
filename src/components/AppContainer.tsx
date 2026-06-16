@@ -70,6 +70,11 @@ export default function AppContainer({ currentUser }: { currentUser: User }) {
     await supabase.from('items').update({ status: newStatus }).eq('id', item.id)
   }
 
+  const handleUpdateItem = async (id: string, updates: Partial<Item>) => {
+    setItems(prev => prev.map(i => i.id === id ? { ...i, ...updates } : i))
+    await supabase.from('items').update(updates).eq('id', id)
+  }
+
   const handleAddItem = async (title: string, listId: string) => {
     if (!title.trim() || !isAdmin) return
     const tempId = crypto.randomUUID()
@@ -178,6 +183,7 @@ export default function AppContainer({ currentUser }: { currentUser: User }) {
             items={items} 
             onClose={() => setDetailId(null)}
             onToggleStatus={handleToggleStatus}
+            onUpdateItem={handleUpdateItem}
             currentUser={currentUser}
           />
         )}
