@@ -107,17 +107,17 @@ export default function AppContainer({ currentUser }: { currentUser: User }) {
     
     // Auto-create a main list for the branch
     const listId = id + '-main'
-    const mainList: List = { id: listId, branch_id: id, type: 'branch', name: name + ' Main' }
+    const mainList: List = { id: listId, branch_id: id, type: 'branch', name: name + ' Main', archived: false }
     setLists(prev => [...prev, mainList])
-    await supabase.from('lists').insert({ id: listId, branch_id: id, type: 'branch', name: name + ' Main' })
+    await supabase.from('lists').insert({ id: listId, branch_id: id, type: 'branch', name: name + ' Main', archived: false })
   }
 
   const handleAddList = async (name: string, branchId: string) => {
     if (!name.trim() || !isAdmin) return
     const id = branchId + '-' + name.toLowerCase().replace(/[^a-z0-9]+/g, '-') + '-' + Math.random().toString(36).slice(2, 6)
-    const newList: List = { id, branch_id: branchId, type: 'arborist', name }
+    const newList: List = { id, branch_id: branchId, type: 'arborist', name, archived: false }
     setLists(prev => [...prev, newList])
-    await supabase.from('lists').insert({ id, branch_id: branchId, type: 'arborist', name })
+    await supabase.from('lists').insert({ id, branch_id: branchId, type: 'arborist', name, archived: false })
   }
 
   const filteredItems = items.filter(i => {
