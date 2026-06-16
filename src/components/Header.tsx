@@ -1,14 +1,16 @@
-import { Search } from 'lucide-react'
+import { Search, Settings } from 'lucide-react'
 import { User } from '@/lib/types'
 import Image from 'next/image'
+import Link from 'next/link'
 
 interface Props {
   currentUser: User
   searchQuery: string
   setSearchQuery: (query: string) => void
+  onAddItemClick?: () => void
 }
 
-export default function Header({ currentUser, searchQuery, setSearchQuery }: Props) {
+export default function Header({ currentUser, searchQuery, setSearchQuery, onAddItemClick }: Props) {
   return (
     <header className="flex items-center justify-between px-6 py-3 shrink-0" style={{ background: 'var(--color-forest)' }}>
       <div className="flex items-center gap-3">
@@ -27,10 +29,17 @@ export default function Header({ currentUser, searchQuery, setSearchQuery }: Pro
           />
         </div>
         {currentUser.role === 'admin' && (
-          <button className="rounded-full font-semibold tracking-wider text-white px-4 py-1.5"
-            style={{ background: 'var(--color-gold)', fontSize: 10.5, letterSpacing: '0.08em' }}>
-            ADD ITEM
-          </button>
+          <>
+            <Link href="/settings" className="text-white hover:text-gray-300 transition-colors" title="Settings">
+              <Settings size={18} />
+            </Link>
+            <button 
+              onClick={onAddItemClick}
+              className="rounded-full font-semibold tracking-wider text-white px-4 py-1.5"
+              style={{ background: 'var(--color-gold)', fontSize: 10.5, letterSpacing: '0.08em' }}>
+              ADD ITEM
+            </button>
+          </>
         )}
         <div className="flex items-center justify-center rounded-full font-semibold text-white uppercase" 
              style={{ width: 30, height: 30, background: 'var(--color-brand)', fontSize: 12 }}>

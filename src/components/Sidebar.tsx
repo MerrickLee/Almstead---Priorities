@@ -14,6 +14,9 @@ export default function Sidebar({
   items: Item[]
   activeListId: string
   setActiveListId: (id: string) => void
+  isAdmin?: boolean
+  onAddBranch?: (name: string) => void
+  onAddList?: (name: string, branchId: string) => void
 }) {
   const [expanded, setExpanded] = useState<Record<string, boolean>>({})
 
@@ -42,8 +45,20 @@ export default function Sidebar({
         active={activeListId === 'all'} 
         onClick={() => setActiveListId('all')} 
       />
-      <div className="px-4 pt-4 pb-1 font-semibold" style={{ fontSize: 11, letterSpacing: '0.08em', color: 'var(--color-slate)', opacity: 0.7 }}>
-        BRANCHES
+      <div className="px-4 pt-4 pb-1 font-semibold flex items-center justify-between" style={{ fontSize: 11, letterSpacing: '0.08em', color: 'var(--color-slate)', opacity: 0.7 }}>
+        <span>BRANCHES</span>
+        {isAdmin && onAddBranch && (
+          <button 
+            onClick={() => {
+              const name = window.prompt("Enter new branch name:")
+              if (name) onAddBranch(name)
+            }}
+            className="hover:text-[var(--color-forest)] transition-colors"
+            title="Add Branch"
+          >
+            +
+          </button>
+        )}
       </div>
       
       {branches.map(b => {
@@ -64,6 +79,11 @@ export default function Sidebar({
               caret={arboristLists.length > 0}
               expandedCaret={!!expanded[b.id]}
               onCaret={(e: React.MouseEvent) => toggleExpand(b.id, e)}
+              isAdmin={isAdmin}
+              onAddList={() => {
+                const name = window.prompt(`Enter arborist/list name for ${b.name}:`)
+                if (name && onAddList) onAddList(name, b.id)
+              }}
             />
             {expanded[b.id] && arboristLists.map(al => (
               <SidebarRow 
@@ -88,10 +108,13 @@ export default function Sidebar({
   )
 }
 
-function SidebarRow({ label, count, active, onClick, nested, caret, expandedCaret, onCaret }: any) {
+function SidebarRow({ label, count, active, onClick, nested, caret, expandedCaret, onCaret, isAdmin, onAddList }: any) {
+  const [isHovered, setIsHovered] = useState(false)
   return (
-    <div className="flex items-center justify-between cursor-pointer"
+    <div className="flex items-center justify-between cursor-pointer group"
       onClick={onClick}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
       style={{
         padding: nested ? '6px 16px 6px 34px' : '7px 16px 7px 13px',
         fontSize: nested ? 12.5 : 13,
@@ -108,7 +131,18 @@ function SidebarRow({ label, count, active, onClick, nested, caret, expandedCare
         )}
         {label}
       </span>
-      <span style={{ color: '#9AAA9A', fontWeight: 400 }}>{count}</span>
+      <div className="flex items-center gap-2">
+        {isAdmin && onAddList && !nested && isHovered && (
+          <button 
+            onClick={(e) => { e.stopPropagation(); onAddList() }} 
+            className="text-[var(--color-gold)] hover:text-yellow-600 text-[14px] leading-none"
+            title="Add List"
+          >
+            +
+          </button>
+        )}
+        <span style={{ color: '#9AAA9A', fontWeight: 400 }}>{count}</span>
+      </div>
     </div>
   )
 }

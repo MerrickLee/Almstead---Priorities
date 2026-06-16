@@ -8,6 +8,7 @@ import Header from './Header'
 import Sidebar from './Sidebar'
 import MainList from './MainList'
 import DetailPanel from './DetailPanel'
+import AddItemModal from './AddItemModal'
 
 export default function AppContainer({ currentUser }: { currentUser: User }) {
   const supabase = createClient()
@@ -18,6 +19,7 @@ export default function AppContainer({ currentUser }: { currentUser: User }) {
   const [detailId, setDetailId] = useState<string | null>(null)
   const [showCompleted, setShowCompleted] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
+  const [isAddItemModalOpen, setIsAddItemModalOpen] = useState(false)
 
   const isManager = currentUser.role === 'manager' || currentUser.role === 'admin'
   const isAdmin = currentUser.role === 'admin'
@@ -96,6 +98,28 @@ export default function AppContainer({ currentUser }: { currentUser: User }) {
     trackEvent('item_added', { list_id: listId, source: 'manual' })
   }
 
+  const handleAddBranch = async (name: string) => {
+    if (!name.trim() || !isAdmin) return
+    const id = name.toLowerCase().replace(/[^a-z0-9]+/g, '-') + '-' + Math.random().toString(36).slice(2, 6)
+    const newBranch: Branch = { id, name }
+    setBranches(prev => [...prev, newBranch])
+    await supabase.from('branches').insert({ id, name })
+    
+    // Auto-create a main list for the branch
+    const listId = id + '-main'
+    const mainList: List = { id: listId, branch_id: id, type: 'branch', name: name + ' Main' }
+    setLists(prev => [...prev, mainList])
+    await supabase.from('lists').insert({ id: listId, branch_id: id, type: 'branch', name: name + ' Main' })
+  }
+
+  const handleAddList = async (name: string, branchId: string) => {
+    if (!name.trim() || !isAdmin) return
+    const id = branchId + '-' + name.toLowerCase().replace(/[^a-z0-9]+/g, '-') + '-' + Math.random().toString(36).slice(2, 6)
+    const newList: List = { id, branch_id: branchId, type: 'arborist', name }
+    setLists(prev => [...prev, newList])
+    await supabase.from('lists').insert({ id, branch_id: branchId, type: 'arborist', name })
+  }
+
   const filteredItems = items.filter(i => {
     if (!searchQuery) return true
     const q = searchQuery.toLowerCase()
@@ -104,7 +128,7 @@ export default function AppContainer({ currentUser }: { currentUser: User }) {
 
   return (
     <div className="flex flex-col h-screen w-full font-sans">
-      <Header currentUser={currentUser} searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
+      <Header currentUser={currentUser} searchQuery={searchQuery} setSearchQuery={setSearchQuery} onAddItemClick={() => setIsAddItemModalOpen(true)} />
       <div className="flex flex-1 overflow-hidden">
         <Sidebar 
           branches={branches} 
@@ -112,6 +136,9 @@ export default function AppContainer({ currentUser }: { currentUser: User }) {
           items={items} 
           activeListId={activeListId} 
           setActiveListId={setActiveListId} 
+          isAdmin={isAdmin}
+          onAddBranch={handleAddBranch}
+          onAddList={handleAddList}
         />
         <MainList 
           currentUser={currentUser}
@@ -136,6 +163,15 @@ export default function AppContainer({ currentUser }: { currentUser: User }) {
           />
         )}
       </div>
+
+      {isAddItemModalOpen && (
+        <AddItemModal 
+          branches={branches}
+          lists={lists}
+          onClose={() => setIsAddItemModalOpen(false)}
+          onAdd={handleAddItem}
+        />
+      )}
     </div>
   )
 }
