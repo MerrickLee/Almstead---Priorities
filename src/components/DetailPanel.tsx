@@ -105,7 +105,25 @@ export default function DetailPanel({ itemId, items, onClose, onToggleStatus, on
       onPaste={handlePaste}
     >
       <div className="flex items-start justify-between">
-        <h2 className="font-bold pr-3 text-[17px]" style={{ color: 'var(--color-forest)' }}>{detail.title}</h2>
+        <input 
+          key={`title-${detail.id}`}
+          defaultValue={detail.title}
+          className="font-bold pr-3 text-[17px] bg-transparent border-none focus:outline-none focus:ring-1 focus:ring-brand rounded-sm w-full" 
+          style={{ color: 'var(--color-forest)' }}
+          onBlur={(e) => {
+            const newTitle = e.target.value.trim()
+            if (newTitle && newTitle !== detail.title && onUpdateItem) {
+              onUpdateItem(detail.id, { title: newTitle })
+            } else {
+              e.target.value = detail.title // revert if empty
+            }
+          }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              e.currentTarget.blur()
+            }
+          }}
+        />
         <button onClick={onClose} aria-label="Close" className="text-slate/50 hover:text-slate">
           <X size={16} />
         </button>
