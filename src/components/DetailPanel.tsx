@@ -89,9 +89,18 @@ export default function DetailPanel({ itemId, items, onClose, onToggleStatus, on
         </button>
       </div>
 
-      <div className="mt-3 rounded-lg p-3 min-h-[64px] text-[12.5px]" style={{ background: 'var(--color-cream)', color: '#5F7A5F' }}>
-        {notesText}
-      </div>
+      <textarea 
+        key={`notes-${detail.id}`}
+        defaultValue={notesText}
+        placeholder="Add notes..."
+        className="mt-3 rounded-lg p-3 min-h-[64px] text-[12.5px] w-full resize-none focus:outline-none focus:ring-1" 
+        style={{ background: 'var(--color-cream)', color: '#5F7A5F', outlineColor: 'var(--color-brand)' }}
+        onBlur={(e) => {
+          if (e.target.value !== notesText && onUpdateItem) {
+            onUpdateItem(detail.id, { notes: e.target.value })
+          }
+        }}
+      />
 
       {detail.links && detail.links.length > 0 && (
         <div className="mt-3">
