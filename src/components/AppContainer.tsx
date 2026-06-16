@@ -33,7 +33,8 @@ export default function AppContainer({ currentUser }: { currentUser: User }) {
         supabase.from('lists').select('*').order('sort_order', { ascending: true }),
         supabase.from('items').select(`
           *,
-          activity:activity_log(*, actor:users(name))
+          activity:activity_log(*, actor:users(name)),
+          images:item_images(*)
         `).order('sort_order', { ascending: true })
       ])
 
@@ -48,10 +49,10 @@ export default function AppContainer({ currentUser }: { currentUser: User }) {
     const channel = supabase.channel('items_changes')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'items' }, async (payload) => {
         if (payload.eventType === 'INSERT') {
-          const { data } = await supabase.from('items').select('*, activity:activity_log(*, actor:users(name))').eq('id', payload.new.id).single()
+          const { data } = await supabase.from('items').select('*, activity:activity_log(*, actor:users(name)), images:item_images(*)').eq('id', payload.new.id).single()
           if (data) setItems(prev => [...prev.filter(i => i.id !== data.id), data as Item].sort((a, b) => a.sort_order - b.sort_order))
         } else if (payload.eventType === 'UPDATE') {
-          const { data } = await supabase.from('items').select('*, activity:activity_log(*, actor:users(name))').eq('id', payload.new.id).single()
+          const { data } = await supabase.from('items').select('*, activity:activity_log(*, actor:users(name)), images:item_images(*)').eq('id', payload.new.id).single()
           if (data) setItems(prev => prev.map(i => i.id === data.id ? data as Item : i).sort((a, b) => a.sort_order - b.sort_order))
         } else if (payload.eventType === 'DELETE') {
           setItems(prev => prev.filter(i => i.id !== payload.old.id))

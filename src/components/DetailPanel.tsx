@@ -42,12 +42,27 @@ export default function DetailPanel({ itemId, items, onClose, onToggleStatus, on
         
         if (data) {
           const { data: { publicUrl } } = supabase.storage.from('item_images').getPublicUrl(fileName)
-          await supabase.from('item_images').insert({
+          
+          const newImage = {
+            id: crypto.randomUUID(),
             item_id: itemId,
             storage_path: fileName,
             thumb_path: publicUrl,
-            uploaded_by: currentUser.id
+            uploaded_by: currentUser.id,
+            created_at: new Date().toISOString()
+          }
+          
+          await supabase.from('item_images').insert({
+            id: newImage.id,
+            item_id: newImage.item_id,
+            storage_path: newImage.storage_path,
+            thumb_path: newImage.thumb_path,
+            uploaded_by: newImage.uploaded_by
           })
+          
+          if (onUpdateItem) {
+            onUpdateItem(itemId, { images: [...(detail.images || []), newImage] })
+          }
         }
       }
     }
