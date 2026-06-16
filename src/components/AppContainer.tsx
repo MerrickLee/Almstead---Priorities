@@ -123,6 +123,18 @@ export default function AppContainer({ currentUser }: { currentUser: User }) {
     await supabase.from('lists').insert({ id, branch_id: branchId, type: 'arborist', name, archived: false, sort_order })
   }
 
+  const handleEditBranch = async (id: string, newName: string) => {
+    if (!newName.trim() || !isAdmin) return
+    setBranches(prev => prev.map(b => b.id === id ? { ...b, name: newName } : b))
+    await supabase.from('branches').update({ name: newName }).eq('id', id)
+  }
+
+  const handleEditList = async (id: string, newName: string) => {
+    if (!newName.trim() || !isAdmin) return
+    setLists(prev => prev.map(l => l.id === id ? { ...l, name: newName } : l))
+    await supabase.from('lists').update({ name: newName }).eq('id', id)
+  }
+
   const filteredItems = items.filter(i => {
     if (!searchQuery) return true
     const q = searchQuery.toLowerCase()
@@ -144,6 +156,8 @@ export default function AppContainer({ currentUser }: { currentUser: User }) {
           isAdmin={isAdmin}
           onAddBranch={handleAddBranch}
           onAddList={handleAddList}
+          onEditBranch={handleEditBranch}
+          onEditList={handleEditList}
         />
         <MainList 
           currentUser={currentUser}

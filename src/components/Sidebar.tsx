@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { Branch, List, Item } from '@/lib/types'
-import { ChevronRight, ChevronDown, Mail, GripVertical } from 'lucide-react'
+import { ChevronRight, ChevronDown, Mail, GripVertical, Pencil } from 'lucide-react'
 import {
   DndContext,
   closestCenter,
@@ -44,6 +44,8 @@ export default function Sidebar({
   isAdmin?: boolean
   onAddBranch?: (name: string) => void
   onAddList?: (name: string, branchId: string) => void
+  onEditBranch?: (id: string, newName: string) => void
+  onEditList?: (id: string, newName: string) => void
 }) {
   const [expanded, setExpanded] = useState<Record<string, boolean>>({})
   const supabase = createClient()
@@ -160,6 +162,8 @@ export default function Sidebar({
                 toggleExpand={toggleExpand}
                 isAdmin={isAdmin}
                 onAddList={onAddList}
+                onEditBranch={onEditBranch}
+                onEditList={onEditList}
                 countFor={countFor}
               />
             )
@@ -176,7 +180,7 @@ export default function Sidebar({
   )
 }
 
-function SortableSidebarBranch({ branch, listId, count, activeListId, setActiveListId, arboristLists, expanded, toggleExpand, isAdmin, onAddList, countFor }: any) {
+function SortableSidebarBranch({ branch, listId, count, activeListId, setActiveListId, arboristLists, expanded, toggleExpand, isAdmin, onAddList, onEditBranch, onEditList, countFor }: any) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: branch.id,
     data: { type: 'branch' },
@@ -206,6 +210,10 @@ function SortableSidebarBranch({ branch, listId, count, activeListId, setActiveL
           const name = window.prompt(`Enter arborist/list name for ${branch.name}:`)
           if (name && onAddList) onAddList(name, branch.id)
         }}
+        onEditName={() => {
+          const newName = window.prompt("Edit branch name:", branch.name)
+          if (newName && onEditBranch) onEditBranch(branch.id, newName)
+        }}
         dragHandleProps={{ ...attributes, ...listeners }}
       />
       
@@ -219,6 +227,7 @@ function SortableSidebarBranch({ branch, listId, count, activeListId, setActiveL
               activeListId={activeListId}
               setActiveListId={setActiveListId}
               isAdmin={isAdmin}
+              onEditList={onEditList}
             />
           ))}
         </SortableContext>
@@ -227,7 +236,7 @@ function SortableSidebarBranch({ branch, listId, count, activeListId, setActiveL
   )
 }
 
-function SortableSidebarList({ list, count, activeListId, setActiveListId, isAdmin }: any) {
+function SortableSidebarList({ list, count, activeListId, setActiveListId, isAdmin, onEditList }: any) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: list.id,
     data: { type: 'list', branchId: list.branch_id },
@@ -249,13 +258,17 @@ function SortableSidebarList({ list, count, activeListId, setActiveListId, isAdm
         nested 
         onClick={() => setActiveListId(list.id)} 
         isAdmin={isAdmin}
+        onEditName={() => {
+          const newName = window.prompt("Edit list name:", list.name)
+          if (newName && onEditList) onEditList(list.id, newName)
+        }}
         dragHandleProps={{ ...attributes, ...listeners }}
       />
     </div>
   )
 }
 
-function SidebarRow({ label, count, active, onClick, nested, caret, expandedCaret, onCaret, isAdmin, onAddList, dragHandleProps }: any) {
+function SidebarRow({ label, count, active, onClick, nested, caret, expandedCaret, onCaret, isAdmin, onAddList, onEditName, dragHandleProps }: any) {
   const [isHovered, setIsHovered] = useState(false)
   
   return (
@@ -287,6 +300,15 @@ function SidebarRow({ label, count, active, onClick, nested, caret, expandedCare
         {label}
       </span>
       <div className="flex items-center gap-2">
+        {isAdmin && onEditName && isHovered && (
+          <button 
+            onClick={(e) => { e.stopPropagation(); onEditName() }} 
+            className="text-[var(--color-slate)] hover:text-black opacity-40 hover:opacity-100 transition-opacity leading-none"
+            title="Edit Name"
+          >
+            <Pencil size={11} />
+          </button>
+        )}
         {isAdmin && onAddList && !nested && isHovered && (
           <button 
             onClick={(e) => { e.stopPropagation(); onAddList() }} 
