@@ -24,7 +24,7 @@ export default function DetailPanel({ itemId, items, onClose, onToggleStatus, on
 
   const notesText = typeof detail.notes === 'string' 
     ? detail.notes 
-    : (detail.notes?.content?.[0]?.content?.[0]?.text || 'Add notes…')
+    : (detail.notes?.content?.[0]?.content?.[0]?.text || '')
 
   const uploadFiles = async (files: File[]) => {
     setIsUploading(true)
