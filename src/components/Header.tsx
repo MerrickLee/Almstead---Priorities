@@ -1,5 +1,6 @@
-import { TreePine, Search } from 'lucide-react'
+import { Search } from 'lucide-react'
 import { User } from '@/lib/types'
+import Image from 'next/image'
 
 interface Props {
   currentUser: User
@@ -11,8 +12,7 @@ export default function Header({ currentUser, searchQuery, setSearchQuery }: Pro
   return (
     <header className="flex items-center justify-between px-6 py-3 shrink-0" style={{ background: 'var(--color-forest)' }}>
       <div className="flex items-center gap-3">
-        <TreePine size={20} style={{ color: 'var(--color-gold)' }} />
-        <span className="font-semibold tracking-wider" style={{ color: 'var(--color-paper)', fontSize: 16, letterSpacing: '0.05em' }}>ALMSTEAD</span>
+        <Image src="/horizontal-almstead-logo.png" alt="Almstead" width={140} height={28} style={{ objectFit: 'contain' }} />
         <span style={{ color: '#9DBCA4', fontSize: 13, borderLeft: '1px solid #2C4A3A', paddingLeft: 12 }}>Priorities</span>
       </div>
       <div className="flex items-center gap-3">
