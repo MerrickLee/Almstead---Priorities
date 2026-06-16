@@ -131,13 +131,13 @@ export default function MainList({
   }
 
   return (
-    <main className="flex-1 px-7 py-5 overflow-y-auto" style={{ minWidth: 0 }}>
+    <main className="flex-1 px-4 md:px-7 py-4 md:py-5 overflow-y-auto" style={{ minWidth: 0 }}>
       <div style={{ fontSize: 12, color: 'var(--color-slate)', opacity: 0.7 }}>
         All {!inAll && <><ChevronRight size={11} className="inline mx-1" /> <span style={{ color: 'var(--color-slate)', opacity: 1 }}>{listName}</span></>}
       </div>
       
       <div className="flex items-baseline justify-between mt-1">
-        <h1 className="font-bold text-[28px] tracking-tight" style={{ color: 'var(--color-forest)' }}>{listName}</h1>
+        <h1 className="font-bold text-[22px] sm:text-[28px] tracking-tight" style={{ color: 'var(--color-forest)' }}>{listName}</h1>
         {done.length > 0 && (
           <button onClick={() => setShowCompleted(!showCompleted)} className="font-semibold text-[11px] tracking-[0.07em]" style={{ color: 'var(--color-gold)' }}>
             {done.length} COMPLETED · {showCompleted ? "HIDE" : "SHOW"}

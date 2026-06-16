@@ -100,8 +100,8 @@ export default function DetailPanel({ itemId, items, onClose, onToggleStatus, on
 
   return (
     <aside 
-      className="shrink-0 bg-white px-5 py-5 overflow-y-auto" 
-      style={{ width: 290, borderLeft: '1px solid var(--color-sage-pale)' }}
+      className="bg-white px-5 py-5 overflow-y-auto fixed inset-0 z-40 md:relative md:z-0 md:w-[290px] md:shrink-0 w-full" 
+      style={{ borderLeft: '1px solid var(--color-sage-pale)' }}
       onPaste={handlePaste}
     >
       <div className="flex items-start justify-between">

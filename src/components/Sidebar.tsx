@@ -23,6 +23,8 @@ import { CSS } from '@dnd-kit/utilities'
 import { createClient } from '@/utils/supabase/client'
 
 export default function Sidebar({
+  isOpen,
+  setIsOpen,
   branches,
   setBranches,
   lists,
@@ -36,6 +38,8 @@ export default function Sidebar({
   onEditBranch,
   onEditList,
 }: {
+  isOpen: boolean
+  setIsOpen: (open: boolean) => void
   branches: Branch[]
   setBranches?: React.Dispatch<React.SetStateAction<Branch[]>>
   lists: List[]
@@ -56,6 +60,11 @@ export default function Sidebar({
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   )
+
+  const handleSelect = (id: string) => {
+    setActiveListId(id)
+    setIsOpen(false)
+  }
 
   const countFor = (id: string) => {
     return items.filter(i => {
@@ -119,15 +128,25 @@ export default function Sidebar({
   }
 
   return (
-    <aside className="shrink-0 py-4 flex flex-col overflow-y-auto" style={{ width: 210, background: 'var(--color-cream)', borderRight: '1px solid #E3E1D4' }}>
-      <SidebarRow 
-        label="All" 
-        count={countFor('all')} 
-        active={activeListId === 'all'} 
-        onClick={() => setActiveListId('all')} 
-      />
-      
-      <div className="px-4 pt-4 pb-1 font-semibold flex items-center justify-between" style={{ fontSize: 11, letterSpacing: '0.08em', color: 'var(--color-slate)', opacity: 0.7 }}>
+    <>
+      {isOpen && (
+        <div 
+          className="fixed inset-0 bg-black/30 z-40 md:hidden"
+          onClick={() => setIsOpen(false)}
+        />
+      )}
+      <aside 
+        className={`shrink-0 py-4 flex flex-col overflow-y-auto bg-cream fixed md:relative inset-y-0 left-0 z-50 transition-transform duration-300 md:translate-x-0 ${isOpen ? 'translate-x-0' : '-translate-x-full'}`} 
+        style={{ width: 230, borderRight: '1px solid #E3E1D4', backgroundColor: 'var(--color-cream)' }}
+      >
+        <SidebarRow 
+          label="All" 
+          count={countFor('all')} 
+          active={activeListId === 'all'} 
+          onClick={() => handleSelect('all')} 
+        />
+        
+        <div className="px-4 pt-4 pb-1 font-semibold flex items-center justify-between" style={{ fontSize: 11, letterSpacing: '0.08em', color: 'var(--color-slate)', opacity: 0.7 }}>
         <span>BRANCHES</span>
         {isAdmin && onAddBranch && (
           <button 
@@ -158,7 +177,7 @@ export default function Sidebar({
                 listId={listId}
                 count={countFor(b.id)}
                 activeListId={activeListId}
-                setActiveListId={setActiveListId}
+                setActiveListId={handleSelect}
                 arboristLists={arboristLists}
                 expanded={!!expanded[b.id]}
                 toggleExpand={toggleExpand}
@@ -179,6 +198,7 @@ export default function Sidebar({
         <div style={{ color: '#9AAA9A' }}>Subscribed to 2 lists</div>
       </div>
     </aside>
+    </>
   )
 }
 

@@ -20,6 +20,7 @@ export default function AppContainer({ currentUser }: { currentUser: User }) {
   const [showCompleted, setShowCompleted] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [isAddItemModalOpen, setIsAddItemModalOpen] = useState(false)
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false)
 
   const isManager = currentUser.role === 'manager' || currentUser.role === 'admin'
   const isAdmin = currentUser.role === 'admin'
@@ -149,9 +150,11 @@ export default function AppContainer({ currentUser }: { currentUser: User }) {
 
   return (
     <div className="flex flex-col h-screen w-full font-sans">
-      <Header currentUser={currentUser} searchQuery={searchQuery} setSearchQuery={setSearchQuery} onAddItemClick={() => setIsAddItemModalOpen(true)} />
-      <div className="flex flex-1 overflow-hidden">
+      <Header currentUser={currentUser} searchQuery={searchQuery} setSearchQuery={setSearchQuery} onAddItemClick={() => setIsAddItemModalOpen(true)} onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} />
+      <div className="flex flex-1 overflow-hidden relative">
         <Sidebar 
+          isOpen={isSidebarOpen}
+          setIsOpen={setIsSidebarOpen}
           branches={branches} 
           setBranches={setBranches}
           lists={lists} 
