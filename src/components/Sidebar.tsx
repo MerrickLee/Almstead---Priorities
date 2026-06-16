@@ -8,6 +8,9 @@ export default function Sidebar({
   items,
   activeListId,
   setActiveListId,
+  isAdmin,
+  onAddBranch,
+  onAddList,
 }: {
   branches: Branch[]
   lists: List[]
