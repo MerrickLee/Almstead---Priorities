@@ -18,6 +18,7 @@ export default function DetailPanel({ itemId, items, onClose, onToggleStatus, on
   const detail = items.find(i => i.id === itemId)
   const isManager = currentUser.role === 'manager' || currentUser.role === 'admin'
   const [isUploading, setIsUploading] = useState(false)
+  const [isDragging, setIsDragging] = useState(false)
 
   if (!detail) return null
 
@@ -25,31 +26,54 @@ export default function DetailPanel({ itemId, items, onClose, onToggleStatus, on
     ? detail.notes 
     : (detail.notes?.content?.[0]?.content?.[0]?.text || 'Add notes…')
 
-  const handlePaste = async (e: React.ClipboardEvent) => {
-    const items = e.clipboardData.items
-    for (const item of items) {
-      if (item.type.indexOf('image') !== -1) {
-        const file = item.getAsFile()
-        if (file) {
-          setIsUploading(true)
-          const ext = file.name.split('.').pop() || 'png'
-          const fileName = `${itemId}/${crypto.randomUUID()}.${ext}`
-          
-          const { data, error } = await supabase.storage.from('item_images').upload(fileName, file)
-          if (data) {
-            const { data: { publicUrl } } = supabase.storage.from('item_images').getPublicUrl(fileName)
-            await supabase.from('item_images').insert({
-              item_id: itemId,
-              storage_path: fileName,
-              thumb_path: publicUrl,
-              uploaded_by: currentUser.id
-            })
-            // Realtime will catch this
-          }
-          setIsUploading(false)
+  const uploadFiles = async (files: File[]) => {
+    setIsUploading(true)
+    for (const file of files) {
+      if (file.type.startsWith('image/')) {
+        const ext = file.name.split('.').pop() || 'png'
+        const fileName = `${itemId}/${crypto.randomUUID()}.${ext}`
+        
+        const { data } = await supabase.storage.from('item_images').upload(fileName, file)
+        if (data) {
+          const { data: { publicUrl } } = supabase.storage.from('item_images').getPublicUrl(fileName)
+          await supabase.from('item_images').insert({
+            item_id: itemId,
+            storage_path: fileName,
+            thumb_path: publicUrl,
+            uploaded_by: currentUser.id
+          })
         }
       }
     }
+    setIsUploading(false)
+  }
+
+  const handlePaste = async (e: React.ClipboardEvent) => {
+    const items = e.clipboardData.items
+    const files: File[] = []
+    for (let i = 0; i < items.length; i++) {
+      if (items[i].type.indexOf('image') !== -1) {
+        const f = items[i].getAsFile()
+        if (f) files.push(f)
+      }
+    }
+    if (files.length > 0) uploadFiles(files)
+  }
+
+  const handleDrop = async (e: React.DragEvent) => {
+    e.preventDefault()
+    setIsDragging(false)
+    const files = Array.from(e.dataTransfer.files)
+    if (files.length > 0) uploadFiles(files)
+  }
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault()
+    setIsDragging(true)
+  }
+
+  const handleDragLeave = () => {
+    setIsDragging(false)
   }
 
   return (
@@ -102,15 +126,23 @@ export default function DetailPanel({ itemId, items, onClose, onToggleStatus, on
 
       <div className="mt-4">
         <div className="font-semibold text-[11px] tracking-[0.06em]" style={{ color: '#9AAA9A' }}>IMAGES</div>
-        <div className="flex gap-1.5 mt-1.5 flex-wrap">
+        <div 
+          className="flex gap-1.5 mt-1.5 flex-wrap"
+          onDrop={handleDrop}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+        >
           {detail.images?.map(img => (
             <img key={img.id} src={img.thumb_path || img.storage_path} className="rounded-md w-[62px] h-[46px] object-cover bg-sage-light cursor-pointer" alt="thumbnail" />
           ))}
-          <div className="rounded-md w-[62px] h-[46px] flex items-center justify-center border border-dashed border-sage-light" style={{ color: 'var(--color-sage)' }}>
+          <label className={`rounded-md w-[62px] h-[46px] flex items-center justify-center border border-dashed transition-colors cursor-pointer ${isDragging ? 'border-brand bg-sage-pale' : 'border-sage-light'}`} style={{ color: isDragging ? 'var(--color-brand)' : 'var(--color-sage)' }}>
+            <input type="file" multiple accept="image/*" className="hidden" onChange={(e) => {
+              if (e.target.files) uploadFiles(Array.from(e.target.files))
+            }} />
             {isUploading ? <span className="text-[10px]">...</span> : <UploadCloud size={16} />}
-          </div>
+          </label>
         </div>
-        <div className="text-[10px] mt-1" style={{ color: 'var(--color-sage)' }}>Paste an image anywhere to upload</div>
+        <div className="text-[10px] mt-1" style={{ color: 'var(--color-sage)' }}>Paste, drop, or click to upload images</div>
       </div>
 
       <div className="mt-4">
