@@ -16,7 +16,7 @@ import {
 } from '@dnd-kit/sortable'
 import { ChevronRight, ArrowUpDown, Check, Plus } from 'lucide-react'
 import { Branch, List, Item, User } from '@/lib/types'
-import { SortableItem } from './SortableItem'
+import { SortableItem, StaticItem } from './SortableItem'
 import { createClient } from '@/utils/supabase/client'
 import { trackEvent } from '@/utils/amplitude'
 
@@ -58,9 +58,27 @@ export default function MainList({
     : branches.find((b) => b.id === listId)?.name 
     || lists.find((l) => l.id === listId)?.name
 
-  const visible = items.filter(i => (inAll ? true : i.list_id === listId || lists.find(l => l.branch_id === listId && l.id === i.list_id)))
+  const currentList = lists.find((l) => l.id === listId)
+  const isBranchMain = currentList?.type === 'branch'
+  const branchId = currentList?.branch_id
+
+  const visible = items.filter(i => {
+    if (inAll) return true
+    if (i.list_id === listId) return true
+    if (isBranchMain && branchId) {
+      const parentList = lists.find(l => l.id === i.list_id)
+      if (parentList && parentList.branch_id === branchId) return true
+    }
+    return false
+  })
+
   const open = visible.filter(i => i.status === 'open')
   const done = visible.filter(i => i.status === 'completed')
+
+  const mainOpen = inAll ? open : open.filter(i => i.list_id === listId)
+  const mainDone = inAll ? done : done.filter(i => i.list_id === listId)
+  
+  const subLists = isBranchMain ? lists.filter(l => l.branch_id === branchId && l.type === 'arborist') : []
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -77,10 +95,10 @@ export default function MainList({
     const { active, over } = event
     
     if (over && active.id !== over.id) {
-      const oldIndex = open.findIndex(i => i.id === active.id)
-      const newIndex = open.findIndex(i => i.id === over.id)
+      const oldIndex = mainOpen.findIndex(i => i.id === active.id)
+      const newIndex = mainOpen.findIndex(i => i.id === over.id)
       
-      const newOpen = arrayMove(open, oldIndex, newIndex)
+      const newOpen = arrayMove(mainOpen, oldIndex, newIndex)
       
       // Calculate new sort_order (midpoint)
       let newSortOrder = 0
@@ -94,7 +112,7 @@ export default function MainList({
         newSortOrder = (prev + next) / 2
       }
 
-      const activeItem = open[oldIndex]
+      const activeItem = mainOpen[oldIndex]
 
       // Optimistic update
       setItems(prev => prev.map(i => i.id === activeItem.id ? { ...i, sort_order: newSortOrder } : i).sort((a, b) => a.sort_order - b.sort_order))
@@ -140,10 +158,10 @@ export default function MainList({
           onDragEnd={handleDragEnd}
         >
           <SortableContext 
-            items={open.map(i => i.id)}
+            items={mainOpen.map(i => i.id)}
             strategy={verticalListSortingStrategy}
           >
-            {open.map((item, idx) => (
+            {mainOpen.map((item, idx) => (
               <SortableItem
                 key={item.id}
                 item={item}
@@ -157,7 +175,7 @@ export default function MainList({
           </SortableContext>
         </DndContext>
 
-        {showCompleted && done.map((item) => (
+        {showCompleted && mainDone.map((item) => (
           <div key={item.id} className="flex items-center gap-3 px-4 py-2.5 opacity-65 mb-2">
             <span style={{ width: 16 }} />
             <button onClick={() => onToggleStatus(item)} className="flex items-center justify-center rounded-full shrink-0 text-white" style={{ width: 18, height: 18, background: 'var(--color-brand)' }} aria-label="Reopen">
@@ -188,6 +206,44 @@ export default function MainList({
         {!isAdmin && !inAll && (
           <div className="text-[11.5px] pl-1 mt-2" style={{ color: '#9AAA9A' }}>Only admins add items. New items always join the bottom; only managers reorder.</div>
         )}
+
+        {subLists.map(subList => {
+          const subOpen = open.filter(i => i.list_id === subList.id)
+          const subDone = done.filter(i => i.list_id === subList.id)
+          
+          if (subOpen.length === 0 && subDone.length === 0) return null
+
+          return (
+            <div key={subList.id} className="mt-8">
+              <h3 className="font-bold text-[14px] mb-3 uppercase tracking-wider" style={{ color: 'var(--color-slate)', opacity: 0.8 }}>
+                {subList.name}
+              </h3>
+              {subOpen.map((item, idx) => (
+                <StaticItem
+                  key={item.id}
+                  item={item}
+                  index={idx}
+                  isManager={isManager}
+                  inAll={true} 
+                  onToggleStatus={onToggleStatus}
+                  onClick={() => onDetailClick(item.id)}
+                />
+              ))}
+              {showCompleted && subDone.map((item) => (
+                <div key={item.id} className="flex items-center gap-3 px-4 py-2.5 opacity-65 mb-2">
+                  <span style={{ width: 16 }} />
+                  <button onClick={() => onToggleStatus(item)} className="flex items-center justify-center rounded-full shrink-0 text-white" style={{ width: 18, height: 18, background: 'var(--color-brand)' }} aria-label="Reopen">
+                    <Check size={11} />
+                  </button>
+                  <span className="line-through text-[13.5px]" style={{ color: '#5F7A5F' }}>{item.title}</span>
+                  <span className="ml-auto text-[11px]" style={{ color: '#9AAA9A' }}>
+                    Completed {item.completer?.name ? `· ${item.completer.name}` : ''}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )
+        })}
       </div>
     </main>
   )

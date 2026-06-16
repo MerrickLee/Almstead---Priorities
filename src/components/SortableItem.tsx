@@ -12,26 +12,7 @@ interface Props {
   onClick: () => void
 }
 
-export function SortableItem({ item, index, isManager, inAll, onToggleStatus, onClick }: Props) {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ 
-    id: item.id,
-    disabled: !isManager || inAll
-  })
-
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.5 : 1,
-    border: '1px solid #DDE5D6',
-  }
-
+export function ItemRow({ item, index, isManager, inAll, onToggleStatus, onClick, dragHandleProps, setNodeRef, style, isDragging }: any) {
   // Very basic extraction of text from TipTap JSON notes
   const notesPreview = typeof item.notes === 'string' 
     ? item.notes 
@@ -44,8 +25,8 @@ export function SortableItem({ item, index, isManager, inAll, onToggleStatus, on
       onClick={onClick}
       className="rounded-xl bg-white px-4 py-3 cursor-pointer mb-2 flex items-start gap-3"
     >
-      {isManager && !inAll ? (
-        <div {...attributes} {...listeners} className="mt-1 cursor-grab shrink-0">
+      {isManager && !inAll && dragHandleProps ? (
+        <div {...dragHandleProps} className="mt-1 cursor-grab shrink-0">
           <GripVertical size={16} style={{ color: '#B9C5B9' }} />
         </div>
       ) : (
@@ -111,4 +92,32 @@ export function SortableItem({ item, index, isManager, inAll, onToggleStatus, on
       <Info size={16} className="shrink-0 text-gold" />
     </div>
   )
+}
+
+export function SortableItem(props: Props) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ 
+    id: props.item.id,
+    disabled: !props.isManager || props.inAll
+  })
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+    border: '1px solid #DDE5D6',
+  }
+
+  return <ItemRow {...props} dragHandleProps={{...attributes, ...listeners}} setNodeRef={setNodeRef} style={style} isDragging={isDragging} />
+}
+
+export function StaticItem(props: Props) {
+  const style = { border: '1px solid #DDE5D6' }
+  return <ItemRow {...props} style={style} />
 }
