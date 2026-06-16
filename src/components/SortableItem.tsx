@@ -1,6 +1,6 @@
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { GripVertical, Pin, Link2, Info } from 'lucide-react'
+import { GripVertical, Pin, Link2, Info, Calendar } from 'lucide-react'
 import { Item } from '@/lib/types'
 
 interface Props {
@@ -67,8 +67,14 @@ export function ItemRow({ item, index, isManager, inAll, onToggleStatus, onClick
           </div>
         )}
         
-        {((item.links && item.links.length > 0) || (item.tags && item.tags.length > 0)) && (
+        {((item.links && item.links.length > 0) || (item.tags && item.tags.length > 0) || item.due_date) && (
           <div className="flex flex-wrap gap-1.5 mt-2">
+            {item.due_date && (
+              <span className="flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px]" 
+                style={{ background: '#FAF0E6', color: '#8A5A2B', border: '1px solid #EAD8C8' }}>
+                <Calendar size={10} /> {new Date(item.due_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+              </span>
+            )}
             {item.links?.map(link => (
               <span key={link.id} className="rounded-full px-2.5 py-0.5 text-[11px]" 
                 style={{ background: link.system === 'hubspot' ? '#FAF3E2' : '#F4ECE6', 
