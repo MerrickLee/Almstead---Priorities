@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { X, Clock, UploadCloud, Calendar } from 'lucide-react'
-import { Item, User } from '@/lib/types'
+import { Item, User, ItemImage } from '@/lib/types'
 import { createClient } from '@/utils/supabase/client'
 import { trackEvent } from '@/utils/amplitude'
 
@@ -19,6 +19,7 @@ export default function DetailPanel({ itemId, items, onClose, onToggleStatus, on
   const isManager = currentUser.role === 'manager' || currentUser.role === 'admin'
   const [isUploading, setIsUploading] = useState(false)
   const [isDragging, setIsDragging] = useState(false)
+  const [viewingImage, setViewingImage] = useState<ItemImage | null>(null)
 
   if (!detail) return null
 
@@ -163,7 +164,13 @@ export default function DetailPanel({ itemId, items, onClose, onToggleStatus, on
           onDragLeave={handleDragLeave}
         >
           {detail.images?.map(img => (
-            <img key={img.id} src={img.thumb_path || img.storage_path} className="rounded-md w-[62px] h-[46px] object-cover bg-sage-light cursor-pointer" alt="thumbnail" />
+            <img 
+              key={img.id} 
+              src={img.thumb_path || img.storage_path} 
+              className="rounded-md w-[62px] h-[46px] object-cover bg-sage-light cursor-pointer hover:opacity-80 transition-opacity" 
+              alt="thumbnail" 
+              onClick={() => setViewingImage(img)}
+            />
           ))}
           <label className={`rounded-md w-[62px] h-[46px] flex items-center justify-center border border-dashed transition-colors cursor-pointer ${isDragging ? 'border-brand bg-sage-pale' : 'border-sage-light'}`} style={{ color: isDragging ? 'var(--color-brand)' : 'var(--color-sage)' }}>
             <input type="file" multiple accept="image/*" className="hidden" onChange={(e) => {
@@ -216,6 +223,48 @@ export default function DetailPanel({ itemId, items, onClose, onToggleStatus, on
           </button>
         )}
       </div>
+
+      {viewingImage && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-6" onClick={() => setViewingImage(null)}>
+          <button className="absolute top-6 right-6 text-white hover:text-gray-300 transition-colors" onClick={() => setViewingImage(null)}>
+            <X size={32} />
+          </button>
+          
+          <img 
+            src={viewingImage.thumb_path || viewingImage.storage_path} 
+            className="max-w-full max-h-[80vh] object-contain rounded-md" 
+            alt="Large view"
+            onClick={(e) => e.stopPropagation()} 
+          />
+          
+          <div className="absolute bottom-10 flex gap-4" onClick={(e) => e.stopPropagation()}>
+            <a 
+              href={viewingImage.thumb_path || viewingImage.storage_path} 
+              download 
+              target="_blank"
+              className="px-5 py-2.5 bg-white text-black font-semibold tracking-wide rounded-full text-sm hover:bg-gray-200 transition-colors"
+            >
+              DOWNLOAD
+            </a>
+            {(isManager || currentUser.id === viewingImage.uploaded_by) && (
+              <button 
+                onClick={async () => {
+                  if (!window.confirm('Are you sure you want to delete this image?')) return
+                  await supabase.storage.from('item_images').remove([viewingImage.storage_path])
+                  await supabase.from('item_images').delete().eq('id', viewingImage.id)
+                  if (onUpdateItem) {
+                    onUpdateItem(detail.id, { images: detail.images?.filter(img => img.id !== viewingImage.id) })
+                  }
+                  setViewingImage(null)
+                }}
+                className="px-5 py-2.5 bg-red-600 text-white font-semibold tracking-wide rounded-full text-sm hover:bg-red-700 transition-colors"
+              >
+                DELETE
+              </button>
+            )}
+          </div>
+        </div>
+      )}
     </aside>
   )
 }
