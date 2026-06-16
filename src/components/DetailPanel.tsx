@@ -33,7 +33,13 @@ export default function DetailPanel({ itemId, items, onClose, onToggleStatus, on
         const ext = file.name.split('.').pop() || 'png'
         const fileName = `${itemId}/${crypto.randomUUID()}.${ext}`
         
-        const { data } = await supabase.storage.from('item_images').upload(fileName, file)
+        const { data, error } = await supabase.storage.from('item_images').upload(fileName, file)
+        
+        if (error) {
+          alert(`Image upload failed: ${error.message}. Please ensure the 'item_images' storage bucket exists and has correct RLS policies.`)
+          console.error("Upload error:", error)
+        }
+        
         if (data) {
           const { data: { publicUrl } } = supabase.storage.from('item_images').getPublicUrl(fileName)
           await supabase.from('item_images').insert({
