@@ -12,7 +12,14 @@ interface Props {
   onClick: () => void
 }
 
-export function ItemRow({ item, index, isManager, inAll, onToggleStatus, onClick, dragHandleProps, setNodeRef, style, isDragging }: any) {
+interface ItemRowProps extends Props {
+  dragHandleProps?: any
+  setNodeRef?: (node: HTMLElement | null) => void
+  style?: React.CSSProperties
+  isDragging?: boolean
+}
+
+export function ItemRow({ item, index, isManager, inAll, onToggleStatus, onClick, dragHandleProps, setNodeRef, style, isDragging }: ItemRowProps) {
   // Very basic extraction of text from TipTap JSON notes
   const notesPreview = typeof item.notes === 'string' 
     ? item.notes 
