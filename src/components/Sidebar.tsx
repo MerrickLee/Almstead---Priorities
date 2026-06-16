@@ -33,6 +33,8 @@ export default function Sidebar({
   isAdmin,
   onAddBranch,
   onAddList,
+  onEditBranch,
+  onEditList,
 }: {
   branches: Branch[]
   setBranches?: React.Dispatch<React.SetStateAction<Branch[]>>
