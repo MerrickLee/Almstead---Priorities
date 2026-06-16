@@ -12,6 +12,7 @@ export interface User {
 export interface Branch {
   id: string
   name: string
+  sort_order: number
 }
 
 export interface List {
@@ -22,6 +23,7 @@ export interface List {
   name: string
   color?: string
   archived: boolean
+  sort_order: number
 }
 
 export interface Item {

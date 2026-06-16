@@ -29,8 +29,8 @@ export default function AppContainer({ currentUser }: { currentUser: User }) {
     trackEvent('list_viewed', { list_id: 'all' })
     async function fetchData() {
       const [bRes, lRes, iRes] = await Promise.all([
-        supabase.from('branches').select('*'),
-        supabase.from('lists').select('*'),
+        supabase.from('branches').select('*').order('sort_order', { ascending: true }),
+        supabase.from('lists').select('*').order('sort_order', { ascending: true }),
         supabase.from('items').select(`
           *,
           activity:activity_log(*, actor:users(name))
@@ -101,23 +101,26 @@ export default function AppContainer({ currentUser }: { currentUser: User }) {
   const handleAddBranch = async (name: string) => {
     if (!name.trim() || !isAdmin) return
     const id = name.toLowerCase().replace(/[^a-z0-9]+/g, '-') + '-' + Math.random().toString(36).slice(2, 6)
-    const newBranch: Branch = { id, name }
+    const sort_order = branches.length > 0 ? Math.max(...branches.map(b => b.sort_order || 0)) + 1024 : 1024
+    const newBranch: Branch = { id, name, sort_order }
     setBranches(prev => [...prev, newBranch])
-    await supabase.from('branches').insert({ id, name })
+    await supabase.from('branches').insert({ id, name, sort_order })
     
     // Auto-create a main list for the branch
     const listId = id + '-main'
-    const mainList: List = { id: listId, branch_id: id, type: 'branch', name: name + ' Main', archived: false }
+    const mainList: List = { id: listId, branch_id: id, type: 'branch', name: name + ' Main', archived: false, sort_order: 0 }
     setLists(prev => [...prev, mainList])
-    await supabase.from('lists').insert({ id: listId, branch_id: id, type: 'branch', name: name + ' Main', archived: false })
+    await supabase.from('lists').insert({ id: listId, branch_id: id, type: 'branch', name: name + ' Main', archived: false, sort_order: 0 })
   }
 
   const handleAddList = async (name: string, branchId: string) => {
     if (!name.trim() || !isAdmin) return
     const id = branchId + '-' + name.toLowerCase().replace(/[^a-z0-9]+/g, '-') + '-' + Math.random().toString(36).slice(2, 6)
-    const newList: List = { id, branch_id: branchId, type: 'arborist', name, archived: false }
+    const branchLists = lists.filter(l => l.branch_id === branchId)
+    const sort_order = branchLists.length > 0 ? Math.max(...branchLists.map(l => l.sort_order || 0)) + 1024 : 1024
+    const newList: List = { id, branch_id: branchId, type: 'arborist', name, archived: false, sort_order }
     setLists(prev => [...prev, newList])
-    await supabase.from('lists').insert({ id, branch_id: branchId, type: 'arborist', name, archived: false })
+    await supabase.from('lists').insert({ id, branch_id: branchId, type: 'arborist', name, archived: false, sort_order })
   }
 
   const filteredItems = items.filter(i => {
@@ -132,7 +135,9 @@ export default function AppContainer({ currentUser }: { currentUser: User }) {
       <div className="flex flex-1 overflow-hidden">
         <Sidebar 
           branches={branches} 
+          setBranches={setBranches}
           lists={lists} 
+          setLists={setLists}
           items={items} 
           activeListId={activeListId} 
           setActiveListId={setActiveListId} 
