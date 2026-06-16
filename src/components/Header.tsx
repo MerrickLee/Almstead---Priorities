@@ -12,25 +12,25 @@ interface Props {
 
 export default function Header({ currentUser, searchQuery, setSearchQuery, onAddItemClick }: Props) {
   return (
-    <header className="flex items-center justify-between px-6 py-3 shrink-0" style={{ background: 'var(--color-forest)' }}>
+    <header className="flex items-center justify-between px-6 py-3 shrink-0 bg-white" style={{ borderBottom: '1px solid var(--color-sage-pale)' }}>
       <div className="flex items-center gap-3">
         <Image src="/horizontal-almstead-logo.png" alt="Almstead" width={140} height={28} style={{ objectFit: 'contain' }} />
-        <span style={{ color: '#9DBCA4', fontSize: 13, borderLeft: '1px solid #2C4A3A', paddingLeft: 12 }}>Priorities</span>
+        <span style={{ color: 'var(--color-forest)', fontSize: 13, borderLeft: '1px solid var(--color-sage-pale)', paddingLeft: 12, fontWeight: 500 }}>Priorities</span>
       </div>
       <div className="flex items-center gap-3">
-        <div className="flex items-center gap-2 rounded-full px-3 py-1.5" style={{ background: '#163828' }}>
-          <Search size={14} style={{ color: '#9DBCA4' }} />
+        <div className="flex items-center gap-2 rounded-full px-3 py-1.5" style={{ background: 'var(--color-sage-pale)' }}>
+          <Search size={14} style={{ color: 'var(--color-forest)' }} />
           <input 
              value={searchQuery}
              onChange={e => setSearchQuery(e.target.value)}
              placeholder="Search priorities"
-             className="bg-transparent outline-none"
-             style={{ color: '#9DBCA4', fontSize: 12, width: 140 }}
+             className="bg-transparent outline-none placeholder-gray-400"
+             style={{ color: 'var(--color-forest)', fontSize: 12, width: 140 }}
           />
         </div>
         {currentUser.role === 'admin' && (
           <>
-            <Link href="/settings" className="text-white hover:text-gray-300 transition-colors" title="Settings">
+            <Link href="/settings" className="transition-colors hover:opacity-70" style={{ color: 'var(--color-forest)' }} title="Settings">
               <Settings size={18} />
             </Link>
             <button 

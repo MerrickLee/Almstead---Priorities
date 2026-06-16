@@ -33,7 +33,7 @@ export interface Item {
   notes?: any
   sort_order: number
   status: 'open' | 'completed'
-  due_date?: string
+  due_date?: string | null
   assignee_id?: string
   pinned: boolean
   source: 'manual' | 'hubspot' | 'acorn'
