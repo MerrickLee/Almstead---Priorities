@@ -17,6 +17,7 @@ export default function DetailPanel({ itemId, items, onClose, onToggleStatus, on
   const supabase = createClient()
   const detail = items.find(i => i.id === itemId)
   const isManager = currentUser.role === 'manager' || currentUser.role === 'admin'
+  const canEdit = detail ? (isManager || detail.created_by === currentUser.id || detail.assignee_id === currentUser.id) : false
   const [isUploading, setIsUploading] = useState(false)
   const [isDragging, setIsDragging] = useState(false)
   const [viewingImage, setViewingImage] = useState<ItemImage | null>(null)
@@ -28,6 +29,7 @@ export default function DetailPanel({ itemId, items, onClose, onToggleStatus, on
     : (detail.notes?.content?.[0]?.content?.[0]?.text || '')
 
   const uploadFiles = async (files: File[]) => {
+    if (!canEdit) return
     setIsUploading(true)
     for (const file of files) {
       if (file.type.startsWith('image/')) {
@@ -102,13 +104,14 @@ export default function DetailPanel({ itemId, items, onClose, onToggleStatus, on
     <aside 
       className="bg-white px-5 py-5 overflow-y-auto fixed inset-0 z-40 md:relative md:z-0 md:w-[290px] md:shrink-0 w-full" 
       style={{ borderLeft: '1px solid var(--color-sage-pale)' }}
-      onPaste={handlePaste}
+      onPaste={canEdit ? handlePaste : undefined}
     >
       <div className="flex items-start justify-between">
         <input 
           key={`title-${detail.id}`}
           defaultValue={detail.title}
-          className="font-bold pr-3 text-[17px] bg-transparent border-none focus:outline-none focus:ring-1 focus:ring-brand rounded-sm w-full" 
+          disabled={!canEdit}
+          className="font-bold pr-3 text-[17px] bg-transparent border-none focus:outline-none focus:ring-1 focus:ring-brand rounded-sm w-full disabled:cursor-default" 
           style={{ color: 'var(--color-forest)' }}
           onBlur={(e) => {
             const newTitle = e.target.value.trim()
@@ -130,17 +133,18 @@ export default function DetailPanel({ itemId, items, onClose, onToggleStatus, on
       </div>
 
       <textarea 
-        key={`notes-${detail.id}`}
-        defaultValue={notesText}
-        placeholder="Add notes..."
-        className="mt-3 rounded-lg p-3 min-h-[64px] text-[12.5px] w-full resize-none focus:outline-none focus:ring-1" 
-        style={{ background: 'var(--color-cream)', color: '#5F7A5F', outlineColor: 'var(--color-brand)' }}
-        onBlur={(e) => {
-          if (e.target.value !== notesText && onUpdateItem) {
-            onUpdateItem(detail.id, { notes: e.target.value })
-          }
-        }}
-      />
+          key={`notes-${detail.id}`}
+          defaultValue={notesText}
+          disabled={!canEdit}
+          placeholder={canEdit ? "Add notes..." : "No notes yet"}
+          className="mt-3 rounded-lg p-3 min-h-[64px] text-[12.5px] w-full resize-none focus:outline-none focus:ring-1 disabled:cursor-default disabled:resize-none" 
+          style={{ background: 'var(--color-cream)', color: '#5F7A5F', outlineColor: 'var(--color-brand)' }}
+          onBlur={(e) => {
+            if (e.target.value !== notesText && onUpdateItem) {
+              onUpdateItem(detail.id, { notes: e.target.value })
+            }
+          }}
+        />
 
       {detail.links && detail.links.length > 0 && (
         <div className="mt-3">
@@ -162,7 +166,8 @@ export default function DetailPanel({ itemId, items, onClose, onToggleStatus, on
           <Calendar size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: detail.due_date ? 'var(--color-forest)' : '#9AAA9A' }} />
           <input 
             type="date"
-            className="text-[12.5px] py-1.5 pr-2 pl-8 rounded-md border border-sage-light focus:outline-none focus:border-brand w-full bg-cream text-forest cursor-pointer transition-colors"
+            disabled={!canEdit}
+            className="text-[12.5px] py-1.5 pr-2 pl-8 rounded-md border border-sage-light focus:outline-none focus:border-brand w-full bg-cream text-forest cursor-pointer transition-colors disabled:cursor-default disabled:opacity-80"
             style={{ color: detail.due_date ? 'var(--color-forest)' : '#9AAA9A', background: 'var(--color-cream)', borderColor: 'var(--color-sage-pale)' }}
             value={detail.due_date ? detail.due_date.split('T')[0] : ''}
             onChange={(e) => {
@@ -177,9 +182,9 @@ export default function DetailPanel({ itemId, items, onClose, onToggleStatus, on
         <div className="font-semibold text-[11px] tracking-[0.06em]" style={{ color: '#9AAA9A' }}>IMAGES</div>
         <div 
           className="flex gap-1.5 mt-1.5 flex-wrap"
-          onDrop={handleDrop}
-          onDragOver={handleDragOver}
-          onDragLeave={handleDragLeave}
+          onDrop={canEdit ? handleDrop : undefined}
+          onDragOver={canEdit ? handleDragOver : undefined}
+          onDragLeave={canEdit ? handleDragLeave : undefined}
         >
           {detail.images?.map(img => (
             <img 
@@ -190,14 +195,18 @@ export default function DetailPanel({ itemId, items, onClose, onToggleStatus, on
               onClick={() => setViewingImage(img)}
             />
           ))}
-          <label className={`rounded-md w-[62px] h-[46px] flex items-center justify-center border border-dashed transition-colors cursor-pointer ${isDragging ? 'border-brand bg-sage-pale' : 'border-sage-light'}`} style={{ color: isDragging ? 'var(--color-brand)' : 'var(--color-sage)' }}>
-            <input type="file" multiple accept="image/*" className="hidden" onChange={(e) => {
-              if (e.target.files) uploadFiles(Array.from(e.target.files))
-            }} />
-            {isUploading ? <span className="text-[10px]">...</span> : <UploadCloud size={16} />}
-          </label>
+          {canEdit && (
+            <label className={`rounded-md w-[62px] h-[46px] flex items-center justify-center border border-dashed transition-colors cursor-pointer ${isDragging ? 'border-brand bg-sage-pale' : 'border-sage-light'}`} style={{ color: isDragging ? 'var(--color-brand)' : 'var(--color-sage)' }}>
+              <input type="file" multiple accept="image/*" className="hidden" onChange={(e) => {
+                if (e.target.files) uploadFiles(Array.from(e.target.files))
+              }} />
+              {isUploading ? <span className="text-[10px]">...</span> : <UploadCloud size={16} />}
+            </label>
+          )}
         </div>
-        <div className="text-[10px] mt-1" style={{ color: 'var(--color-sage)' }}>Paste, drop, or click to upload images</div>
+        {canEdit && (
+          <div className="text-[10px] mt-1" style={{ color: 'var(--color-sage)' }}>Paste, drop, or click to upload images</div>
+        )}
       </div>
 
       <div className="mt-4">
@@ -229,7 +238,8 @@ export default function DetailPanel({ itemId, items, onClose, onToggleStatus, on
             onToggleStatus(detail)
             trackEvent('item_completed', { item_id: detail.id, status: detail.status === 'open' ? 'completed' : 'open' })
           }}
-          className="rounded-full font-semibold tracking-wider text-white text-[10.5px] px-[14px] py-[6px]"
+          disabled={!canEdit}
+          className="rounded-full font-semibold tracking-wider text-white text-[10.5px] px-[14px] py-[6px] disabled:opacity-50 disabled:cursor-not-allowed"
           style={{ background: 'var(--color-brand)' }}>
           {detail.status === 'open' ? 'COMPLETE' : 'REOPEN'}
         </button>

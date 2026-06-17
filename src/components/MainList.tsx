@@ -161,34 +161,47 @@ export default function MainList({
             items={mainOpen.map(i => i.id)}
             strategy={verticalListSortingStrategy}
           >
-            {mainOpen.map((item, idx) => (
-              <SortableItem
-                key={item.id}
-                item={item}
-                index={idx}
-                isManager={isManager}
-                inAll={inAll}
-                onToggleStatus={onToggleStatus}
-                onClick={() => onDetailClick(item.id)}
-              />
-            ))}
+            {mainOpen.map((item, idx) => {
+              const canEdit = isManager || item.created_by === currentUser.id || item.assignee_id === currentUser.id
+              return (
+                <SortableItem
+                  key={item.id}
+                  item={item}
+                  index={idx}
+                  isManager={isManager}
+                  inAll={inAll}
+                  canEdit={canEdit}
+                  onToggleStatus={onToggleStatus}
+                  onClick={() => onDetailClick(item.id)}
+                />
+              )
+            })}
           </SortableContext>
         </DndContext>
 
-        {showCompleted && mainDone.map((item) => (
-          <div key={item.id} className="flex items-center gap-3 px-4 py-2.5 opacity-65 mb-2">
-            <span style={{ width: 16 }} />
-            <button onClick={() => onToggleStatus(item)} className="flex items-center justify-center rounded-full shrink-0 text-white" style={{ width: 18, height: 18, background: 'var(--color-brand)' }} aria-label="Reopen">
-              <Check size={11} />
-            </button>
-            <span className="line-through text-[13.5px]" style={{ color: '#5F7A5F' }}>{item.title}</span>
-            <span className="ml-auto text-[11px]" style={{ color: '#9AAA9A' }}>
-              Completed {item.completer?.name ? `· ${item.completer.name}` : ''}
-            </span>
-          </div>
-        ))}
+        {showCompleted && mainDone.map((item) => {
+          const canEdit = isManager || item.created_by === currentUser.id || item.assignee_id === currentUser.id
+          return (
+            <div key={item.id} className="flex items-center gap-3 px-4 py-2.5 opacity-65 mb-2">
+              <span style={{ width: 16 }} />
+              <button 
+                onClick={() => onToggleStatus(item)} 
+                disabled={!canEdit}
+                className="flex items-center justify-center rounded-full shrink-0 text-white disabled:opacity-50 disabled:cursor-not-allowed" 
+                style={{ width: 18, height: 18, background: 'var(--color-brand)' }} 
+                aria-label="Reopen"
+              >
+                <Check size={11} />
+              </button>
+              <span className="line-through text-[13.5px]" style={{ color: '#5F7A5F' }}>{item.title}</span>
+              <span className="ml-auto text-[11px]" style={{ color: '#9AAA9A' }}>
+                Completed {item.completer?.name ? `· ${item.completer.name}` : ''}
+              </span>
+            </div>
+          )
+        })}
 
-        {isAdmin && !inAll && (
+        {!inAll && (
           <div className="flex items-center gap-3 rounded-xl px-4 py-2.5 mt-2" style={{ border: "1.5px dashed #C9D4C4" }}>
             <span className="rounded-full shrink-0" style={{ width: 18, height: 18, border: "1.5px dashed #B9C5B9" }} />
             <input 
@@ -203,8 +216,8 @@ export default function MainList({
           </div>
         )}
         
-        {!isAdmin && !inAll && (
-          <div className="text-[11.5px] pl-1 mt-2" style={{ color: '#9AAA9A' }}>Only admins add items. New items always join the bottom; only managers reorder.</div>
+        {!isManager && !inAll && (
+          <div className="text-[11.5px] pl-1 mt-2" style={{ color: '#9AAA9A' }}>New items always join the bottom; only managers reorder.</div>
         )}
 
         {subLists.map(subList => {
@@ -218,29 +231,42 @@ export default function MainList({
               <h3 className="font-bold text-[14px] mb-3 uppercase tracking-wider" style={{ color: 'var(--color-slate)', opacity: 0.8 }}>
                 {subList.name}
               </h3>
-              {subOpen.map((item, idx) => (
-                <StaticItem
-                  key={item.id}
-                  item={item}
-                  index={idx}
-                  isManager={isManager}
-                  inAll={true} 
-                  onToggleStatus={onToggleStatus}
-                  onClick={() => onDetailClick(item.id)}
-                />
-              ))}
-              {showCompleted && subDone.map((item) => (
-                <div key={item.id} className="flex items-center gap-3 px-4 py-2.5 opacity-65 mb-2">
-                  <span style={{ width: 16 }} />
-                  <button onClick={() => onToggleStatus(item)} className="flex items-center justify-center rounded-full shrink-0 text-white" style={{ width: 18, height: 18, background: 'var(--color-brand)' }} aria-label="Reopen">
-                    <Check size={11} />
-                  </button>
-                  <span className="line-through text-[13.5px]" style={{ color: '#5F7A5F' }}>{item.title}</span>
-                  <span className="ml-auto text-[11px]" style={{ color: '#9AAA9A' }}>
-                    Completed {item.completer?.name ? `· ${item.completer.name}` : ''}
-                  </span>
-                </div>
-              ))}
+              {subOpen.map((item, idx) => {
+                const canEdit = isManager || item.created_by === currentUser.id || item.assignee_id === currentUser.id
+                return (
+                  <StaticItem
+                    key={item.id}
+                    item={item}
+                    index={idx}
+                    isManager={isManager}
+                    inAll={true} 
+                    canEdit={canEdit}
+                    onToggleStatus={onToggleStatus}
+                    onClick={() => onDetailClick(item.id)}
+                  />
+                )
+              })}
+              {showCompleted && subDone.map((item) => {
+                const canEdit = isManager || item.created_by === currentUser.id || item.assignee_id === currentUser.id
+                return (
+                  <div key={item.id} className="flex items-center gap-3 px-4 py-2.5 opacity-65 mb-2">
+                    <span style={{ width: 16 }} />
+                    <button 
+                      onClick={() => onToggleStatus(item)} 
+                      disabled={!canEdit}
+                      className="flex items-center justify-center rounded-full shrink-0 text-white disabled:opacity-50 disabled:cursor-not-allowed" 
+                      style={{ width: 18, height: 18, background: 'var(--color-brand)' }} 
+                      aria-label="Reopen"
+                    >
+                      <Check size={11} />
+                    </button>
+                    <span className="line-through text-[13.5px]" style={{ color: '#5F7A5F' }}>{item.title}</span>
+                    <span className="ml-auto text-[11px]" style={{ color: '#9AAA9A' }}>
+                      Completed {item.completer?.name ? `· ${item.completer.name}` : ''}
+                    </span>
+                  </div>
+                )
+              })}
             </div>
           )
         })}

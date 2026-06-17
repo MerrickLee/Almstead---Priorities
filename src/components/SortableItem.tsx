@@ -8,6 +8,7 @@ interface Props {
   index: number
   isManager: boolean
   inAll: boolean
+  canEdit?: boolean
   onToggleStatus: (item: Item) => void
   onClick: () => void
 }
@@ -19,7 +20,7 @@ interface ItemRowProps extends Props {
   isDragging?: boolean
 }
 
-export function ItemRow({ item, index, isManager, inAll, onToggleStatus, onClick, dragHandleProps, setNodeRef, style, isDragging }: ItemRowProps) {
+export function ItemRow({ item, index, isManager, inAll, canEdit = true, onToggleStatus, onClick, dragHandleProps, setNodeRef, style, isDragging }: ItemRowProps) {
   // Very basic extraction of text from TipTap JSON notes
   const notesPreview = typeof item.notes === 'string' 
     ? item.notes 
@@ -50,7 +51,8 @@ export function ItemRow({ item, index, isManager, inAll, onToggleStatus, onClick
       </span>
 
       <button onClick={(e) => { e.stopPropagation(); onToggleStatus(item); }}
-        className="rounded-full shrink-0 mt-0.5" 
+        disabled={!canEdit}
+        className="rounded-full shrink-0 mt-0.5 disabled:opacity-50 disabled:cursor-not-allowed" 
         style={{ width: 18, height: 18, border: '1.5px solid #B9C5B9', background: 'transparent' }} 
         aria-label="Mark complete" 
       />

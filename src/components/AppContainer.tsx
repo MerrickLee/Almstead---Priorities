@@ -68,18 +68,28 @@ export default function AppContainer({ currentUser, impersonatingUser }: { curre
   }, [])
 
   const handleToggleStatus = async (item: Item) => {
+    const isManager = currentUser.role === 'manager' || currentUser.role === 'admin'
+    const canEdit = isManager || item.created_by === currentUser.id || item.assignee_id === currentUser.id
+    if (!canEdit) return
+
     const newStatus = item.status === 'open' ? 'completed' : 'open'
     setItems(prev => prev.map(i => i.id === item.id ? { ...i, status: newStatus } : i))
     await supabase.from('items').update({ status: newStatus }).eq('id', item.id)
   }
 
   const handleUpdateItem = async (id: string, updates: Partial<Item>) => {
+    const item = items.find(i => i.id === id)
+    if (!item) return
+    const isManager = currentUser.role === 'manager' || currentUser.role === 'admin'
+    const canEdit = isManager || item.created_by === currentUser.id || item.assignee_id === currentUser.id
+    if (!canEdit) return
+
     setItems(prev => prev.map(i => i.id === id ? { ...i, ...updates } : i))
     await supabase.from('items').update(updates).eq('id', id)
   }
 
   const handleAddItem = async (title: string, listId: string) => {
-    if (!title.trim() || !isAdmin) return
+    if (!title.trim()) return
     const tempId = crypto.randomUUID()
     const tempItem: Item = {
       id: tempId,
@@ -89,6 +99,7 @@ export default function AppContainer({ currentUser, impersonatingUser }: { curre
       sort_order: 999999,
       pinned: false,
       source: 'manual',
+      created_by: currentUser.id,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
       images: [],
@@ -101,7 +112,8 @@ export default function AppContainer({ currentUser, impersonatingUser }: { curre
     await supabase.from('items').insert({
       title,
       list_id: listId,
-      status: 'open'
+      status: 'open',
+      created_by: currentUser.id
     })
     trackEvent('item_added', { list_id: listId, source: 'manual' })
   }

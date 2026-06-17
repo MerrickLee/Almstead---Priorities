@@ -59,19 +59,17 @@ export default function Header({ currentUser, searchQuery, setSearchQuery, onAdd
           />
         </div>
         {currentUser.role === 'admin' && (
-          <>
-            <Link href="/settings" className="hidden sm:block transition-colors hover:opacity-70" style={{ color: 'var(--color-forest)' }} title="Settings">
-              <Settings size={18} />
-            </Link>
-            <button 
-              onClick={onAddItemClick}
-              className="rounded-full font-semibold tracking-wider text-white px-3 py-1 md:px-4 md:py-1.5 shrink-0"
-              style={{ background: 'var(--color-gold)', fontSize: 10.5, letterSpacing: '0.08em' }}>
-              <span className="hidden sm:inline">ADD ITEM</span>
-              <span className="sm:hidden text-sm leading-none">+</span>
-            </button>
-          </>
+          <Link href="/settings" className="hidden sm:block transition-colors hover:opacity-70" style={{ color: 'var(--color-forest)' }} title="Settings">
+            <Settings size={18} />
+          </Link>
         )}
+        <button 
+          onClick={onAddItemClick}
+          className="rounded-full font-semibold tracking-wider text-white px-3 py-1 md:px-4 md:py-1.5 shrink-0"
+          style={{ background: 'var(--color-gold)', fontSize: 10.5, letterSpacing: '0.08em' }}>
+          <span className="hidden sm:inline">ADD ITEM</span>
+          <span className="sm:hidden text-sm leading-none">+</span>
+        </button>
         <div className="relative" ref={menuRef}>
           <button 
             onClick={() => setIsMenuOpen(!isMenuOpen)}
