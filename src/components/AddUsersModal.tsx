@@ -75,11 +75,14 @@ export default function AddUsersModal({ onClose, onSuccess }: Props) {
     const result = await addUsers(users)
     
     if (result.success) {
-      if (result.added === 0 && result.skipped) {
+      if (result.added === 0 && result.skipped && !result.errors?.length) {
         setError(`All ${result.skipped} user(s) already exist in the system.`)
+      } else if (result.added === 0 && result.errors?.length) {
+        setError(`Failed to add users:\n${result.errors.join('\n')}`)
       } else {
         let msg = `Added ${result.added} user(s) successfully!`
         if (result.skipped) msg += ` ${result.skipped} already existed and were skipped.`
+        if (result.errors?.length) msg += ` ${result.errors.length} had errors.`
         setSuccessMsg(msg)
         setBulkText('')
         onSuccess()

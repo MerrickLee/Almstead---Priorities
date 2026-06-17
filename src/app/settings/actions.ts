@@ -95,7 +95,7 @@ export async function inviteUser(email: string): Promise<{ success: boolean; err
 
 export async function addUsers(
   users: { email: string; name: string }[]
-): Promise<{ success: boolean; error?: string; added?: number; skipped?: number }> {
+): Promise<{ success: boolean; error?: string; added?: number; skipped?: number; errors?: string[] }> {
   try {
     const supabase = await createClient()
 
@@ -119,40 +119,78 @@ export async function addUsers(
 
     let added = 0
     let skipped = 0
+    const errorMessages: string[] = []
 
     for (const user of users) {
-      // Check if user already exists by email
-      const { data: existing } = await supabaseAdmin
+      const email = user.email.toLowerCase()
+
+      // Check if user already exists in public.users by email
+      const { data: existingDbUser } = await supabaseAdmin
         .from('users')
         .select('id')
-        .eq('email', user.email.toLowerCase())
+        .eq('email', email)
         .single()
 
-      if (existing) {
+      if (existingDbUser) {
         skipped++
         continue
       }
 
-      // Generate a placeholder UUID — will be replaced when they sign in via Google
-      const placeholderId = crypto.randomUUID()
-
-      const { error } = await supabaseAdmin.from('users').insert({
-        id: placeholderId,
-        name: user.name,
-        email: user.email.toLowerCase(),
-        role: 'member',
-        active: true,
+      // Create the user in Supabase Auth (no invite email sent)
+      const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
+        email,
+        email_confirm: true,
+        user_metadata: { full_name: user.name },
       })
 
-      if (error) {
-        console.error(`Failed to add user ${user.email}:`, error)
+      if (authError) {
+        // User might already exist in auth but not in public.users
+        if (authError.message?.includes('already been registered')) {
+          // Look up existing auth user by email
+          const { data: { users: existingAuthUsers } } = await supabaseAdmin.auth.admin.listUsers()
+          const existingAuth = existingAuthUsers?.find(u => u.email?.toLowerCase() === email)
+          
+          if (existingAuth) {
+            const { error: insertError } = await supabaseAdmin.from('users').insert({
+              id: existingAuth.id,
+              name: user.name,
+              email,
+              role: 'member',
+              active: true,
+            })
+            if (insertError) {
+              errorMessages.push(`${email}: ${insertError.message}`)
+            } else {
+              added++
+            }
+          } else {
+            errorMessages.push(`${email}: already registered but could not be found`)
+          }
+        } else {
+          errorMessages.push(`${email}: ${authError.message}`)
+        }
         continue
       }
-      added++
+
+      // Insert into public.users with the real auth ID
+      if (authData?.user) {
+        const { error: insertError } = await supabaseAdmin.from('users').insert({
+          id: authData.user.id,
+          name: user.name,
+          email,
+          role: 'member',
+          active: true,
+        })
+        if (insertError) {
+          errorMessages.push(`${email}: ${insertError.message}`)
+        } else {
+          added++
+        }
+      }
     }
 
     revalidatePath('/settings')
-    return { success: true, added, skipped }
+    return { success: true, added, skipped, errors: errorMessages.length > 0 ? errorMessages : undefined }
   } catch (e: any) {
     console.error('addUsers unexpected error:', e)
     return { success: false, error: e.message || 'An unexpected error occurred' }
