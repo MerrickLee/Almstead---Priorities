@@ -50,7 +50,16 @@ export default function AddUsersModal({ onClose, onSuccess }: Props) {
 
     const lines = bulkText.split('\n').filter(l => l.trim())
     const users = lines.map(line => {
-      const parts = line.split(',').map(p => p.trim())
+      const trimmed = line.trim()
+      
+      // Format: "Name <email>"
+      const angleMatch = trimmed.match(/^(.+?)\s*<([^>]+)>$/)
+      if (angleMatch) {
+        return { email: angleMatch[2].trim(), name: angleMatch[1].trim() }
+      }
+      
+      // Format: "email, name"
+      const parts = trimmed.split(',').map(p => p.trim())
       const email = parts[0]
       const name = parts[1] || email.split('@')[0]
       return { email, name }
@@ -164,12 +173,17 @@ export default function AddUsersModal({ onClose, onSuccess }: Props) {
           ) : (
             <div className="space-y-4">
               <p className="text-sm text-gray-500">
-                Add multiple teammates at once. One per line, format: <code className="bg-gray-100 px-1.5 py-0.5 rounded text-xs">email, name</code>
+                Add multiple teammates at once. One per line. Supports these formats:
               </p>
+              <div className="text-xs text-gray-400 space-y-0.5 mb-2">
+                <div><code className="bg-gray-100 px-1.5 py-0.5 rounded">Name &lt;email&gt;</code></div>
+                <div><code className="bg-gray-100 px-1.5 py-0.5 rounded">email, name</code></div>
+                <div><code className="bg-gray-100 px-1.5 py-0.5 rounded">email</code></div>
+              </div>
               <textarea
                 value={bulkText}
                 onChange={e => setBulkText(e.target.value)}
-                placeholder={`jdoe@almstead.com, Jane Doe\nasmith@almstead.com, Alex Smith\nbrown@almstead.com`}
+                placeholder={`Melissa Cardany <mcardany@almstead.com>\nJennifer Smith <jsmith@almstead.com>\njdoe@almstead.com, Jane Doe\nbrown@almstead.com`}
                 rows={8}
                 className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:border-[var(--color-brand)] focus:ring-1 focus:ring-[var(--color-brand)] transition-colors font-mono"
               />
