@@ -28,10 +28,14 @@ export default function AddUsersModal({ onClose, onSuccess }: Props) {
     const result = await addUsers([{ email: singleEmail.trim(), name }])
     
     if (result.success) {
-      setSuccessMsg(`Added ${result.added} user(s) successfully!`)
-      setSingleEmail('')
-      setSingleName('')
-      onSuccess()
+      if (result.added === 0 && result.skipped) {
+        setError('This user already exists in the system.')
+      } else {
+        setSuccessMsg(`Added successfully!`)
+        setSingleEmail('')
+        setSingleName('')
+        onSuccess()
+      }
     } else {
       setError(result.error || 'Failed to add user')
     }
@@ -62,9 +66,15 @@ export default function AddUsersModal({ onClose, onSuccess }: Props) {
     const result = await addUsers(users)
     
     if (result.success) {
-      setSuccessMsg(`Added ${result.added} user(s) successfully!${result.skipped ? ` ${result.skipped} already existed.` : ''}`)
-      setBulkText('')
-      onSuccess()
+      if (result.added === 0 && result.skipped) {
+        setError(`All ${result.skipped} user(s) already exist in the system.`)
+      } else {
+        let msg = `Added ${result.added} user(s) successfully!`
+        if (result.skipped) msg += ` ${result.skipped} already existed and were skipped.`
+        setSuccessMsg(msg)
+        setBulkText('')
+        onSuccess()
+      }
     } else {
       setError(result.error || 'Failed to add users')
     }
