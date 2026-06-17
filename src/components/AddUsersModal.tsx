@@ -50,7 +50,8 @@ export default function AddUsersModal({ onClose, onSuccess }: Props) {
 
     const lines = bulkText.split('\n').filter(l => l.trim())
     const users = lines.map(line => {
-      const trimmed = line.trim()
+      // Strip trailing commas, semicolons, and whitespace
+      const trimmed = line.trim().replace(/[,;]+$/, '').trim()
       
       // Format: "Name <email>"
       const angleMatch = trimmed.match(/^(.+?)\s*<([^>]+)>$/)

@@ -145,26 +145,44 @@ export async function addUsers(
 
       if (authError) {
         // User might already exist in auth but not in public.users
-        if (authError.message?.includes('already been registered')) {
-          // Look up existing auth user by email
-          const { data: { users: existingAuthUsers } } = await supabaseAdmin.auth.admin.listUsers()
-          const existingAuth = existingAuthUsers?.find(u => u.email?.toLowerCase() === email)
-          
-          if (existingAuth) {
-            const { error: insertError } = await supabaseAdmin.from('users').insert({
-              id: existingAuth.id,
-              name: user.name,
-              email,
-              role: 'member',
-              active: true,
+        if (authError.message?.includes('already been registered') || authError.message?.includes('already exists')) {
+          try {
+            // Look up existing auth user by email using filtered list
+            const { data: listData } = await supabaseAdmin.auth.admin.listUsers({
+              page: 1,
+              perPage: 1000
             })
-            if (insertError) {
-              errorMessages.push(`${email}: ${insertError.message}`)
+            const existingAuth = listData?.users?.find(u => u.email?.toLowerCase() === email)
+            
+            if (existingAuth) {
+              // Check if they already have a public.users record
+              const { data: existingPublic } = await supabaseAdmin
+                .from('users')
+                .select('id')
+                .eq('id', existingAuth.id)
+                .single()
+
+              if (existingPublic) {
+                skipped++
+              } else {
+                const { error: insertError } = await supabaseAdmin.from('users').insert({
+                  id: existingAuth.id,
+                  name: user.name,
+                  email,
+                  role: 'member',
+                  active: true,
+                })
+                if (insertError) {
+                  errorMessages.push(`${email}: ${insertError.message}`)
+                } else {
+                  added++
+                }
+              }
             } else {
-              added++
+              errorMessages.push(`${email}: already registered in auth but could not be found`)
             }
-          } else {
-            errorMessages.push(`${email}: already registered but could not be found`)
+          } catch (lookupError: any) {
+            errorMessages.push(`${email}: ${lookupError.message || 'failed to look up existing user'}`)
           }
         } else {
           errorMessages.push(`${email}: ${authError.message}`)
