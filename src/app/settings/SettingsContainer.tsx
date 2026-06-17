@@ -1,10 +1,12 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import Header from '@/components/Header'
 import { Branch, User } from '@/lib/types'
 import UserRow from './UserRow'
 import { inviteUser } from './actions'
+import AddUsersModal from '@/components/AddUsersModal'
 
 interface Props {
   currentUser: User
@@ -15,6 +17,8 @@ interface Props {
 export default function SettingsContainer({ currentUser, users, branches }: Props) {
   const [searchQuery, setSearchQuery] = useState('')
   const [isInviting, setIsInviting] = useState(false)
+  const [isAddUsersOpen, setIsAddUsersOpen] = useState(false)
+  const router = useRouter()
 
   const handleInvite = async () => {
     const email = window.prompt("Enter the email address of the teammate to invite:")
@@ -52,14 +56,23 @@ export default function SettingsContainer({ currentUser, users, branches }: Prop
             <h1 className="text-3xl font-bold text-[#1a2f24] mb-3">Team & permissions</h1>
             <p className="text-[#2C4A3A]/70">Approve new teammates, manage roles, and assign branches.</p>
           </div>
-          <button 
-            onClick={handleInvite}
-            disabled={isInviting}
-            className="px-5 py-2 rounded-full text-sm font-semibold text-white transition-colors disabled:opacity-50"
-            style={{ background: 'var(--color-brand)' }}
-          >
-            {isInviting ? 'Inviting...' : '+ Invite Teammate'}
-          </button>
+          <div className="flex items-center gap-2">
+            <button 
+              onClick={() => setIsAddUsersOpen(true)}
+              className="px-5 py-2 rounded-full text-sm font-semibold text-white transition-colors"
+              style={{ background: 'var(--color-brand)' }}
+            >
+              + Add Teammates
+            </button>
+            <button 
+              onClick={handleInvite}
+              disabled={isInviting}
+              className="px-5 py-2 rounded-full text-sm font-semibold transition-colors disabled:opacity-50 border"
+              style={{ color: 'var(--color-brand)', borderColor: 'var(--color-brand)' }}
+            >
+              {isInviting ? 'Inviting...' : 'Invite via Email'}
+            </button>
+          </div>
         </div>
 
         <div className="bg-white rounded-xl shadow-sm border border-black/5 overflow-hidden">
@@ -79,6 +92,13 @@ export default function SettingsContainer({ currentUser, users, branches }: Prop
           </div>
         </div>
       </main>
+
+      {isAddUsersOpen && (
+        <AddUsersModal
+          onClose={() => setIsAddUsersOpen(false)}
+          onSuccess={() => router.refresh()}
+        />
+      )}
     </div>
   )
 }

@@ -92,3 +92,69 @@ export async function inviteUser(email: string): Promise<{ success: boolean; err
     return { success: false, error: e.message || 'An unexpected error occurred' }
   }
 }
+
+export async function addUsers(
+  users: { email: string; name: string }[]
+): Promise<{ success: boolean; error?: string; added?: number; skipped?: number }> {
+  try {
+    const supabase = await createClient()
+
+    // Verify current user is admin
+    const { data: { user: authUser } } = await supabase.auth.getUser()
+    if (!authUser) return { success: false, error: 'Unauthorized' }
+
+    const { data: dbUser } = await supabase.from('users').select('role').eq('id', authUser.id).single()
+    if (!dbUser || dbUser.role !== 'admin') {
+      return { success: false, error: 'Forbidden: Only admins can add users' }
+    }
+
+    if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+      return { success: false, error: 'Server configuration error: Service role key is not set.' }
+    }
+
+    const supabaseAdmin = createSupabaseClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    )
+
+    let added = 0
+    let skipped = 0
+
+    for (const user of users) {
+      // Check if user already exists by email
+      const { data: existing } = await supabaseAdmin
+        .from('users')
+        .select('id')
+        .eq('email', user.email.toLowerCase())
+        .single()
+
+      if (existing) {
+        skipped++
+        continue
+      }
+
+      // Generate a placeholder UUID — will be replaced when they sign in via Google
+      const placeholderId = crypto.randomUUID()
+
+      const { error } = await supabaseAdmin.from('users').insert({
+        id: placeholderId,
+        name: user.name,
+        email: user.email.toLowerCase(),
+        role: 'member',
+        active: true,
+      })
+
+      if (error) {
+        console.error(`Failed to add user ${user.email}:`, error)
+        continue
+      }
+      added++
+    }
+
+    revalidatePath('/settings')
+    return { success: true, added, skipped }
+  } catch (e: any) {
+    console.error('addUsers unexpected error:', e)
+    return { success: false, error: e.message || 'An unexpected error occurred' }
+  }
+}
