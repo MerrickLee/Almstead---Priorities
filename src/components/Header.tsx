@@ -1,8 +1,13 @@
+'use client'
+
 import { Search, Settings, Menu } from 'lucide-react'
 import { User } from '@/lib/types'
 import Image from 'next/image'
 import Link from 'next/link'
-
+import { useState, useRef, useEffect } from 'react'
+import { createClient } from '@/utils/supabase/client'
+import { useRouter } from 'next/navigation'
+import ViewAsModal from './ViewAsModal'
 interface Props {
   currentUser: User
   searchQuery: string
@@ -12,6 +17,27 @@ interface Props {
 }
 
 export default function Header({ currentUser, searchQuery, setSearchQuery, onAddItemClick, onToggleSidebar }: Props) {
+  const [isMenuOpen, setIsMenuOpen] = useState(false)
+  const [isViewAsOpen, setIsViewAsOpen] = useState(false)
+  const menuRef = useRef<HTMLDivElement>(null)
+  const supabase = createClient()
+  const router = useRouter()
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setIsMenuOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut()
+    router.push('/login')
+    router.refresh()
+  }
   return (
     <header className="flex items-center justify-between px-4 md:px-6 py-3 shrink-0 bg-white" style={{ borderBottom: '1px solid var(--color-sage-pale)' }}>
       <div className="flex items-center gap-2 md:gap-3">
@@ -46,11 +72,47 @@ export default function Header({ currentUser, searchQuery, setSearchQuery, onAdd
             </button>
           </>
         )}
-        <div className="flex shrink-0 items-center justify-center rounded-full font-semibold text-white uppercase ml-1 md:ml-0" 
-             style={{ width: 28, height: 28, background: 'var(--color-brand)', fontSize: 11 }}>
-          {currentUser.name.substring(0, 2)}
+        <div className="relative" ref={menuRef}>
+          <button 
+            onClick={() => setIsMenuOpen(!isMenuOpen)}
+            className="flex shrink-0 items-center justify-center rounded-full font-semibold text-white uppercase ml-1 md:ml-0 hover:opacity-80 transition-opacity" 
+               style={{ width: 28, height: 28, background: 'var(--color-brand)', fontSize: 11 }}>
+            {currentUser.name.substring(0, 2)}
+          </button>
+          
+          {isMenuOpen && (
+            <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-100 py-1 z-50">
+              <div className="px-4 py-2 border-b border-gray-50 mb-1">
+                <div className="text-sm font-medium text-[var(--color-forest)] truncate">{currentUser.name}</div>
+                <div className="text-xs text-gray-500 capitalize">{currentUser.role}</div>
+              </div>
+              
+              {currentUser.role === 'admin' && (
+                <button
+                  onClick={() => {
+                    setIsMenuOpen(false)
+                    setIsViewAsOpen(true)
+                  }}
+                  className="w-full text-left px-4 py-2 text-sm text-[var(--color-forest)] hover:bg-gray-50 transition-colors"
+                >
+                  View as Teammate
+                </button>
+              )}
+              
+              <button
+                onClick={handleLogout}
+                className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
+              >
+                Log Out
+              </button>
+            </div>
+          )}
         </div>
       </div>
+      
+      {isViewAsOpen && (
+        <ViewAsModal onClose={() => setIsViewAsOpen(false)} />
+      )}
     </header>
   )
 }

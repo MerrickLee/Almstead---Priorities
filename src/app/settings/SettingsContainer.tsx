@@ -22,10 +22,14 @@ export default function SettingsContainer({ currentUser, users, branches }: Prop
 
     setIsInviting(true)
     try {
-      await inviteUser(email)
-      alert("Invitation sent successfully!")
+      const result = await inviteUser(email)
+      if (result.success) {
+        alert("Invitation sent successfully!")
+      } else {
+        alert(result.error || "Failed to invite user")
+      }
     } catch (e: any) {
-      alert(e.message || "Failed to invite user")
+      alert(e.message || "An unexpected error occurred")
     } finally {
       setIsInviting(false)
     }

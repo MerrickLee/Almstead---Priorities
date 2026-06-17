@@ -9,8 +9,9 @@ import Sidebar from './Sidebar'
 import MainList from './MainList'
 import DetailPanel from './DetailPanel'
 import AddItemModal from './AddItemModal'
+import ImpersonationBanner from './ImpersonationBanner'
 
-export default function AppContainer({ currentUser }: { currentUser: User }) {
+export default function AppContainer({ currentUser, impersonatingUser }: { currentUser: User, impersonatingUser?: User | null }) {
   const supabase = createClient()
   const [branches, setBranches] = useState<Branch[]>([])
   const [lists, setLists] = useState<List[]>([])
@@ -150,6 +151,7 @@ export default function AppContainer({ currentUser }: { currentUser: User }) {
 
   return (
     <div className="flex flex-col h-screen w-full font-sans">
+      {impersonatingUser && <ImpersonationBanner impersonatedUser={currentUser} />}
       <Header currentUser={currentUser} searchQuery={searchQuery} setSearchQuery={setSearchQuery} onAddItemClick={() => setIsAddItemModalOpen(true)} onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} />
       <div className="flex flex-1 overflow-hidden relative">
         <Sidebar 
