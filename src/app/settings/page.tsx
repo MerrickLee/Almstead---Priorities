@@ -1,4 +1,5 @@
 import { createClient } from '@/utils/supabase/server'
+import { createClient as createSupabaseClient } from '@supabase/supabase-js'
 import { redirect } from 'next/navigation'
 import SettingsContainer from './SettingsContainer'
 import { Branch, User } from '@/lib/types'
@@ -13,7 +14,13 @@ export default async function SettingsPage() {
     redirect('/login')
   }
 
-  const { data: dbUser } = await supabase.from('users').select('*').eq('id', authUser.id).single()
+  // Use admin client to bypass RLS and see all users
+  const supabaseAdmin = createSupabaseClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
+
+  const { data: dbUser } = await supabaseAdmin.from('users').select('*').eq('id', authUser.id).single()
 
   const currentUser: User = dbUser || {
     id: authUser.id,
@@ -28,8 +35,8 @@ export default async function SettingsPage() {
   }
 
   const [usersRes, branchesRes] = await Promise.all([
-    supabase.from('users').select('*').order('name'),
-    supabase.from('branches').select('*').order('name')
+    supabaseAdmin.from('users').select('*').order('name'),
+    supabaseAdmin.from('branches').select('*').order('name')
   ])
 
   const users = (usersRes.data || []) as User[]
