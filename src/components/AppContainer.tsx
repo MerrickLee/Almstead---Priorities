@@ -10,6 +10,8 @@ import MainList from './MainList'
 import DetailPanel from './DetailPanel'
 import AddItemModal from './AddItemModal'
 import ImpersonationBanner from './ImpersonationBanner'
+import EmlImportModal from './EmlImportModal'
+import { UploadCloud } from 'lucide-react'
 
 export default function AppContainer({ currentUser, impersonatingUser }: { currentUser: User, impersonatingUser?: User | null }) {
   const supabase = createClient()
@@ -22,6 +24,95 @@ export default function AppContainer({ currentUser, impersonatingUser }: { curre
   const [searchQuery, setSearchQuery] = useState('')
   const [isAddItemModalOpen, setIsAddItemModalOpen] = useState(false)
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
+  const [isDragOverPage, setIsDragOverPage] = useState(false)
+  const [emlData, setEmlData] = useState<{
+    title: string
+    notes: string
+    listId: string
+    images: {
+      filename: string
+      mimeType: string
+      content: ArrayBuffer
+      size: number
+      previewUrl: string
+      selected: boolean
+    }[]
+  } | null>(null)
+
+  useEffect(() => {
+    const handleDragOverWindow = (e: DragEvent) => {
+      e.preventDefault()
+      if (e.dataTransfer?.types.includes('Files')) {
+        setIsDragOverPage(true)
+      }
+    }
+
+    const handleDropWindow = (e: DragEvent) => {
+      e.preventDefault()
+      setIsDragOverPage(false)
+    }
+
+    window.addEventListener('dragover', handleDragOverWindow)
+    window.addEventListener('drop', handleDropWindow)
+
+    return () => {
+      window.removeEventListener('dragover', handleDragOverWindow)
+      window.removeEventListener('drop', handleDropWindow)
+    }
+  }, [])
+
+  const handleDropEml = async (e: React.DragEvent) => {
+    e.preventDefault()
+    setIsDragOverPage(false)
+
+    const file = e.dataTransfer.files[0]
+    if (!file) return
+
+    if (!file.name.endsWith('.eml')) {
+      alert('Please drop an email (.eml) file.')
+      return
+    }
+
+    try {
+      const PostalMime = (await import('postal-mime')).default
+      const parser = new PostalMime()
+      const parsed = await parser.parse(file)
+
+      // Clean subject prefix (Fwd:, Re:, etc.)
+      const cleanSubject = parsed.subject ? parsed.subject.replace(/^(fwd|re|fw|reply|forward):\s*/i, '') : 'Untitled Priority'
+      
+      const bodyText = parsed.text || ''
+
+      const imageAttachments = parsed.attachments
+        .filter(a => a.mimeType.startsWith('image/'))
+        .map(a => {
+          const blob = new Blob([a.content as any], { type: a.mimeType })
+          const url = URL.createObjectURL(blob)
+          return {
+            filename: a.filename || 'image.png',
+            mimeType: a.mimeType,
+            content: a.content as any,
+            size: (a.content as any).byteLength || (a.content as any).length || 0,
+            previewUrl: url,
+            selected: ((a.content as any).byteLength || (a.content as any).length || 0) > 20000 // default selected if size > 20KB
+          }
+        })
+
+      setEmlData({
+        title: cleanSubject,
+        notes: bodyText,
+        listId: activeListId !== 'all' ? activeListId : '',
+        images: imageAttachments
+      })
+    } catch (err: any) {
+      console.error(err)
+      alert('Failed to parse email file: ' + err.message)
+    }
+  }
+
+  const handleAddEmlComplete = (newItem: Item) => {
+    setItems(prev => [...prev.filter(i => i.id !== newItem.id), newItem].sort((a, b) => a.sort_order - b.sort_order))
+  }
 
   const isManager = currentUser.role === 'manager' || currentUser.role === 'admin'
   const isAdmin = currentUser.role === 'admin'
@@ -163,6 +254,20 @@ export default function AppContainer({ currentUser, impersonatingUser }: { curre
 
   return (
     <div className="flex flex-col h-screen w-full font-sans">
+      {isDragOverPage && (
+        <div 
+          onDragLeave={() => setIsDragOverPage(false)}
+          onDragOver={(e) => e.preventDefault()}
+          onDrop={handleDropEml}
+          className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-[#0C2A1E]/85 backdrop-blur-md border-4 border-dashed border-[#B8860B] m-4 rounded-2xl animate-pulse"
+        >
+          <div className="text-center p-8 bg-white/10 rounded-3xl max-w-md">
+            <UploadCloud size={64} className="mx-auto text-[#B8860B] mb-4 animate-bounce" />
+            <h2 className="text-2xl font-bold text-white mb-2 font-sans">Drop EML File Here</h2>
+            <p className="text-white/80 text-sm">We'll automatically extract the subject, synopsis, and images to create a priority task.</p>
+          </div>
+        </div>
+      )}
       {impersonatingUser && <ImpersonationBanner impersonatedUser={currentUser} />}
       <Header currentUser={currentUser} searchQuery={searchQuery} setSearchQuery={setSearchQuery} onAddItemClick={() => setIsAddItemModalOpen(true)} onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} />
       <div className="flex flex-1 overflow-hidden relative">
@@ -213,6 +318,17 @@ export default function AppContainer({ currentUser, impersonatingUser }: { curre
           lists={lists}
           onClose={() => setIsAddItemModalOpen(false)}
           onAdd={handleAddItem}
+        />
+      )}
+
+      {emlData && (
+        <EmlImportModal 
+          branches={branches}
+          lists={lists}
+          currentUser={currentUser}
+          emlData={emlData}
+          onClose={() => setEmlData(null)}
+          onAddComplete={handleAddEmlComplete}
         />
       )}
     </div>
