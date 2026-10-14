@@ -1,21 +1,19 @@
 -- Insert Branches
-INSERT INTO branches (id, name) VALUES
-('nr', 'New Rochelle'),
-('ha', 'Hawthorne'),
-('st', 'Stamford'),
-('nh', 'North Haledon')
-ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name;
+INSERT INTO branches (id, name, sort_order) VALUES
+('nr', 'New Rochelle', 1024),
+('ha', 'Hawthorne', 2048),
+('st', 'Stamford', 3072),
+('nh', 'North Haledon', 4096)
+ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, sort_order = EXCLUDED.sort_order;
 
--- Note: Seeding auth.users directly is complex because of password hashing, but for local testing, 
--- you can create a user through the local studio and then update their role.
--- Assuming an admin user is created via the Supabase Dashboard, you would manually update their role:
--- UPDATE public.users SET role = 'admin' WHERE email = 'admin@almstead.com';
+-- Auth users are created by the local start script (admin@almstead.com), not by this seed.
+-- Password hashing makes a direct auth.users insert unreliable.
 
 -- Insert Lists (2 sample arborist lists under New Rochelle)
-INSERT INTO lists (id, branch_id, type, name) VALUES
-('nr-jr', 'nr', 'arborist', 'J. Rivera'),
-('nr-mo', 'nr', 'arborist', 'M. Okafor')
-ON CONFLICT (id) DO NOTHING;
+INSERT INTO lists (id, branch_id, type, name, sort_order) VALUES
+('nr-jr', 'nr', 'arborist', 'J. Rivera', 1024),
+('nr-mo', 'nr', 'arborist', 'M. Okafor', 2048)
+ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, sort_order = EXCLUDED.sort_order;
 
 -- Insert some sample items (ignoring users/assignees for simplicity in the seed)
 INSERT INTO items (id, list_id, title, notes, sort_order, status) VALUES
